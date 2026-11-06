@@ -27,6 +27,9 @@ use oxc_parser::{ParseOptions, Parser};
 use oxc_span::{GetSpan, SourceType, Span};
 use rb_model::{DependencyType, ModuleSystem};
 
+use std::borrow::Cow;
+use std::fmt::Write as _;
+
 use crate::jsdoc;
 
 /// Which of dependency-cruiser's extractors to reproduce.
@@ -217,6 +220,45 @@ macro_rules! iterative_chains {
 }
 pub(crate) use iterative_chains;
 
+/// A JavaScript string value as text, borrowed when it is valid UTF-8.
+///
+/// oxc 0.156 keeps string values as WTF-8 (`JSStr`), which can hold a lone surrogate that a Rust
+/// `str` cannot. Such a value is written the way oxc 0.153 wrote it into the `str` the extractor
+/// read until then, so a module name keeps its bytes across the bump: each lone surrogate as
+/// U+FFFD followed by its code unit in four lowercase hex digits, and U+FFFD itself as U+FFFD
+/// followed by `fffd`. The macro takes any value with oxc's `as_str` and `chars`, because
+/// `oxc_str::JSStr` is not re-exported by the oxc crates the extractor depends on.
+macro_rules! js_text {
+    ($value:expr) => {{
+        let value = $value;
+        match value.as_str() {
+            Some(text) => ::std::borrow::Cow::Borrowed(text),
+            None => ::std::borrow::Cow::Owned($crate::walk::with_lone_surrogates(
+                value.chars().map(|c| (c.to_char(), c.to_u32())),
+            )),
+        }
+    }};
+}
+pub(crate) use js_text;
+
+/// The text of a JavaScript string that holds a lone surrogate, from its characters as pairs of
+/// the scalar value (`None` for a lone surrogate) and the code unit, in oxc 0.153's encoding
+/// ([`js_text`]).
+pub(crate) fn with_lone_surrogates(chars: impl Iterator<Item = (Option<char>, u32)>) -> String {
+    let mut text = String::new();
+    for (scalar, unit) in chars {
+        match scalar {
+            Some('\u{FFFD}') => text.push_str("\u{FFFD}fffd"),
+            Some(scalar) => text.push(scalar),
+            None => {
+                // Writing to a String cannot fail.
+                let _ = write!(text, "\u{FFFD}{unit:04x}");
+            }
+        }
+    }
+    text
+}
+
 /// The source could not be parsed at all.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error("could not parse: {0}")]
@@ -369,28 +411,22 @@ fn loosen(source: &str, source_type: SourceType) -> String {
 
 /// The first argument as dependency-cruiser reads it: a string literal, or a template literal
 /// without placeholders. `template_ok` is false for the tsc flavour's `import()` in some positions.
-fn string_argument<'a>(arguments: &'a [Argument<'a>]) -> Option<&'a str> {
+fn string_argument<'a>(arguments: &'a [Argument<'a>]) -> Option<Cow<'a, str>> {
     match arguments.first()? {
-        Argument::StringLiteral(s) => Some(s.value.as_str()),
-        Argument::TemplateLiteral(t) if t.expressions.is_empty() && t.quasis.len() == 1 => t.quasis
-            [0]
-        .value
-        .cooked
-        .as_ref()
-        .map(oxc_ast::ast::Str::as_str),
+        Argument::StringLiteral(s) => Some(js_text!(s.value)),
+        Argument::TemplateLiteral(t) if t.expressions.is_empty() && t.quasis.len() == 1 => {
+            t.quasis[0].value.cooked.map(|cooked| js_text!(cooked))
+        }
         _ => None,
     }
 }
 
-fn expression_string<'a>(expression: &'a Expression<'a>) -> Option<&'a str> {
+fn expression_string<'a>(expression: &'a Expression<'a>) -> Option<Cow<'a, str>> {
     match expression {
-        Expression::StringLiteral(s) => Some(s.value.as_str()),
-        Expression::TemplateLiteral(t) if t.expressions.is_empty() && t.quasis.len() == 1 => t
-            .quasis[0]
-            .value
-            .cooked
-            .as_ref()
-            .map(oxc_ast::ast::Str::as_str),
+        Expression::StringLiteral(s) => Some(js_text!(s.value)),
+        Expression::TemplateLiteral(t) if t.expressions.is_empty() && t.quasis.len() == 1 => {
+            t.quasis[0].value.cooked.map(|cooked| js_text!(cooked))
+        }
         _ => None,
     }
 }
@@ -507,7 +543,7 @@ fn tsc(program: &Program<'_>, source: &str, options: &WalkOptions) -> Vec<Found>
                     &[D::Import]
                 };
                 found.push(Found::new(
-                    &import.source.value,
+                    &js_text!(import.source.value),
                     ModuleSystem::Es6,
                     types,
                     import.span,
@@ -520,7 +556,7 @@ fn tsc(program: &Program<'_>, source: &str, options: &WalkOptions) -> Vec<Found>
                     &[D::Export]
                 };
                 exports.push(Found::new(
-                    &export.source.value,
+                    &js_text!(export.source.value),
                     ModuleSystem::Es6,
                     types,
                     export.span,
@@ -539,7 +575,7 @@ fn tsc(program: &Program<'_>, source: &str, options: &WalkOptions) -> Vec<Found>
                     &[D::Export]
                 };
                 exports.push(Found::new(
-                    &export.source.value,
+                    &js_text!(export.source.value),
                     ModuleSystem::Es6,
                     types,
                     export.span,
@@ -550,7 +586,7 @@ fn tsc(program: &Program<'_>, source: &str, options: &WalkOptions) -> Vec<Found>
                     &equal.module_reference
                 {
                     equals.push(Found::new(
-                        &reference.expression.value,
+                        &js_text!(reference.expression.value),
                         ModuleSystem::Cjs,
                         &[D::ImportEquals],
                         equal.span,
@@ -653,7 +689,7 @@ struct TscNested<'o> {
 /// placeholder) leaves oxc's value empty and names nothing.
 fn import_type_module(import: &oxc_ast::ast::TSImportType<'_>, source: &str) -> Option<String> {
     if !import.source.value.is_empty() {
-        return Some(import.source.value.to_string());
+        return Some(js_text!(import.source.value).into_owned());
     }
     let raw = import.source.span.source_text(source);
     let inner = raw.strip_prefix('`')?.strip_suffix('`')?;
@@ -669,7 +705,7 @@ impl<'a> Visit<'a> for TscNested<'_> {
             let path: Vec<&str> = path.iter().flatten().map(String::as_str).collect();
             if path == ["require"] {
                 self.found.push(Found::new(
-                    module,
+                    &module,
                     ModuleSystem::Cjs,
                     &[D::Require],
                     call.span,
@@ -684,7 +720,7 @@ impl<'a> Visit<'a> for TscNested<'_> {
                 }
             }) {
                 self.found.push(
-                    Found::new(module, ModuleSystem::Cjs, &[D::ExoticRequire], call.span)
+                    Found::new(&module, ModuleSystem::Cjs, &[D::ExoticRequire], call.span)
                         .exotic(name),
                 );
             } else if self.options.detect_process_builtin_module_calls
@@ -692,7 +728,7 @@ impl<'a> Visit<'a> for TscNested<'_> {
                     || path == ["globalThis", "process", "getBuiltinModule"])
             {
                 self.found.push(Found::new(
-                    module,
+                    &module,
                     ModuleSystem::Cjs,
                     &[D::ProcessGetBuiltinModule],
                     call.span,
@@ -705,7 +741,7 @@ impl<'a> Visit<'a> for TscNested<'_> {
     fn visit_import_expression(&mut self, import: &oxc_ast::ast::ImportExpression<'a>) {
         if let Some(module) = expression_string(&import.source) {
             self.found.push(
-                Found::new(module, ModuleSystem::Es6, &[D::DynamicImport], import.span).dynamic(),
+                Found::new(&module, ModuleSystem::Es6, &[D::DynamicImport], import.span).dynamic(),
             );
         }
         walk::walk_import_expression(self, import);
@@ -750,7 +786,7 @@ impl<'a> Visit<'a> for SwcVisitor<'_> {
 
     fn visit_import_declaration(&mut self, import: &ImportDeclaration<'a>) {
         self.found.push(Found::new(
-            &import.source.value,
+            &js_text!(import.source.value),
             ModuleSystem::Es6,
             &[D::Import],
             import.span,
@@ -760,7 +796,7 @@ impl<'a> Visit<'a> for SwcVisitor<'_> {
 
     fn visit_export_all_declaration(&mut self, export: &oxc_ast::ast::ExportAllDeclaration<'a>) {
         self.found.push(Found::new(
-            &export.source.value,
+            &js_text!(export.source.value),
             ModuleSystem::Es6,
             &[D::Export],
             export.span,
@@ -770,7 +806,7 @@ impl<'a> Visit<'a> for SwcVisitor<'_> {
 
     fn visit_export_from_declaration(&mut self, export: &oxc_ast::ast::ExportFromDeclaration<'a>) {
         self.found.push(Found::new(
-            &export.source.value,
+            &js_text!(export.source.value),
             ModuleSystem::Es6,
             &[D::Export],
             export.span,
@@ -784,7 +820,7 @@ impl<'a> Visit<'a> for SwcVisitor<'_> {
     ) {
         if let TSModuleReference::ExternalModuleReference(reference) = &equal.module_reference {
             self.found.push(Found::new(
-                &reference.expression.value,
+                &js_text!(reference.expression.value),
                 ModuleSystem::Cjs,
                 &[D::ImportEquals],
                 equal.span,
@@ -796,7 +832,7 @@ impl<'a> Visit<'a> for SwcVisitor<'_> {
     fn visit_import_expression(&mut self, import: &oxc_ast::ast::ImportExpression<'a>) {
         if let Some(module) = expression_string(&import.source) {
             self.found.push(
-                Found::new(module, ModuleSystem::Es6, &[D::DynamicImport], import.span).dynamic(),
+                Found::new(&module, ModuleSystem::Es6, &[D::DynamicImport], import.span).dynamic(),
             );
         }
         walk::walk_import_expression(self, import);
@@ -809,7 +845,7 @@ impl<'a> Visit<'a> for SwcVisitor<'_> {
                     let name = id.name.as_str();
                     if name == "require" {
                         self.found.push(Found::new(
-                            module,
+                            &module,
                             ModuleSystem::Cjs,
                             &[D::Require],
                             call.span,
@@ -821,7 +857,7 @@ impl<'a> Visit<'a> for SwcVisitor<'_> {
                         .any(|s| !s.contains('.') && s == name)
                     {
                         self.found.push(
-                            Found::new(module, ModuleSystem::Cjs, &[D::ExoticRequire], call.span)
+                            Found::new(&module, ModuleSystem::Cjs, &[D::ExoticRequire], call.span)
                                 .exotic(name),
                         );
                     }
@@ -840,7 +876,7 @@ impl<'a> Visit<'a> for SwcVisitor<'_> {
                             {
                                 self.found.push(
                                     Found::new(
-                                        module,
+                                        &module,
                                         ModuleSystem::Cjs,
                                         &[D::ExoticRequire],
                                         call.span,
@@ -862,7 +898,7 @@ impl<'a> Visit<'a> for SwcVisitor<'_> {
         // into types.
         if let TSType::TSImportType(import) = &annotation.type_annotation {
             self.found.push(Found::new(
-                &import.source.value,
+                &js_text!(import.source.value),
                 ModuleSystem::Es6,
                 &[D::TypeImport],
                 import.span,
@@ -954,19 +990,19 @@ impl<'a> Visit<'a> for AcornCjs<'_> {
             let amd = self.module_system == ModuleSystem::Amd;
             let dependency = match name {
                 "require" => Found::new(
-                    module,
+                    &module,
                     self.module_system,
                     &[if amd { D::AmdRequire } else { D::Require }],
                     call.span,
                 ),
                 "process.getBuiltinModule" | "globalThis.process.getBuiltinModule" => Found::new(
-                    module,
+                    &module,
                     self.module_system,
                     &[D::ProcessGetBuiltinModule],
                     call.span,
                 ),
                 exotic => Found::new(
-                    module,
+                    &module,
                     self.module_system,
                     &[if amd {
                         D::AmdExoticRequire
@@ -1088,7 +1124,7 @@ impl<'a> Visit<'a> for AcornEs6 {
         walk::walk_import_declaration(self, import);
         if !import.source.value.is_empty() {
             self.found.push(Found::new(
-                &import.source.value,
+                &js_text!(import.source.value),
                 ModuleSystem::Es6,
                 &[D::Import],
                 import.span,
@@ -1100,7 +1136,7 @@ impl<'a> Visit<'a> for AcornEs6 {
         walk::walk_export_all_declaration(self, export);
         if !export.source.value.is_empty() {
             self.found.push(Found::new(
-                &export.source.value,
+                &js_text!(export.source.value),
                 ModuleSystem::Es6,
                 &[D::Export],
                 export.span,
@@ -1112,7 +1148,7 @@ impl<'a> Visit<'a> for AcornEs6 {
         walk::walk_export_from_declaration(self, export);
         if !export.source.value.is_empty() {
             self.found.push(Found::new(
-                &export.source.value,
+                &js_text!(export.source.value),
                 ModuleSystem::Es6,
                 &[D::Export],
                 export.span,
@@ -1124,7 +1160,7 @@ impl<'a> Visit<'a> for AcornEs6 {
         walk::walk_import_expression(self, import);
         if let Some(module) = expression_string(&import.source) {
             self.found.push(
-                Found::new(module, ModuleSystem::Es6, &[D::DynamicImport], import.span).dynamic(),
+                Found::new(&module, ModuleSystem::Es6, &[D::DynamicImport], import.span).dynamic(),
             );
         }
     }
@@ -1159,7 +1195,7 @@ impl<'a> Visit<'a> for AcornAmd<'_> {
                         && !s.value.is_empty()
                     {
                         self.found.push(Found::new(
-                            &s.value,
+                            &js_text!(s.value),
                             ModuleSystem::Amd,
                             &[D::AmdDefine],
                             s.span,
@@ -1402,7 +1438,64 @@ mod tests {
         assert_eq!(found.map(|f| f.len()).ok(), Some(1));
     }
 
+    /// oxc 0.153's encoding, a fixed vector: a lone surrogate is U+FFFD and its code unit in
+    /// four lowercase hex digits, and U+FFFD itself is U+FFFD and `fffd`.
+    #[test]
+    fn a_lone_surrogate_is_written_as_oxc_0_153_wrote_it() {
+        let chars = [
+            (None, 0xD800),
+            (Some('a'), 0x61),
+            (Some('\u{FFFD}'), 0xFFFD),
+            (None, 0xDC0F),
+            (Some('😀'), 0x1F600),
+        ];
+        assert_eq!(
+            with_lone_surrogates(chars.into_iter()),
+            "\u{FFFD}d800a\u{FFFD}fffd\u{FFFD}dc0f😀"
+        );
+    }
+
+    /// Through the parser: a module name with a lone surrogate keeps the bytes it had before
+    /// oxc 0.156, in each flavour and from a string literal, a `require` and a plain template
+    /// literal; a name without one is borrowed unchanged.
+    #[test]
+    fn a_module_name_with_a_lone_surrogate_keeps_its_bytes() {
+        let source = "import a from './\\uD800x';\nimport b from './ok\u{FFFD}';\nconst c = require('\\uDC00');\nconst d = require(`./\\uDBFF`);\n";
+        for flavour in [Flavour::Tsc, Flavour::Swc, Flavour::Acorn] {
+            let found = walk_source(
+                source,
+                SourceType::mjs(),
+                flavour,
+                &WalkOptions {
+                    module_systems: vec![ModuleSystem::Es6, ModuleSystem::Cjs],
+                    ..WalkOptions::default()
+                },
+            )
+            .unwrap_or_default();
+            let mut modules: Vec<&str> = found.iter().map(|f| f.module.as_str()).collect();
+            modules.sort_unstable();
+            assert_eq!(
+                modules,
+                [
+                    "./ok\u{FFFD}",
+                    "./\u{FFFD}d800x",
+                    "./\u{FFFD}dbff",
+                    "\u{FFFD}dc00"
+                ],
+                "{flavour:?}"
+            );
+        }
+    }
+
     proptest! {
+        /// A value without a lone surrogate or U+FFFD is written unchanged, so only the strings
+        /// oxc 0.153 escaped are escaped.
+        #[test]
+        fn a_value_without_a_lone_surrogate_is_unchanged(text in "[^\u{FFFD}]{0,40}") {
+            let chars = text.chars().map(|c| (Some(c), u32::from(c)));
+            prop_assert_eq!(with_lone_surrogates(chars), text);
+        }
+
         /// Loosening only blanks, byte for byte: the text keeps its length whatever characters,
         /// multi-byte whitespace included, stand on the blanked lines.
         #[test]

@@ -75,7 +75,7 @@ pub const SIDECAR_EXTENSIONS: &[&str] = &["coffee", "litcoffee", "ls", "cjsx", "
 /// The parser that reads every native extension, with the version the workspace pins
 /// ([ADR-0012](../../../docs/adr/0012-oxc-for-typescript.md)): what `getAvailableTranspilers`
 /// reports as the current version of each transpiler the extractor stands in for.
-pub const PARSER: &str = "oxc 0.153.0";
+pub const PARSER: &str = "oxc 0.156.0";
 
 /// Whether a path is one this extractor parses natively.
 pub fn owns(path: &str) -> bool {
