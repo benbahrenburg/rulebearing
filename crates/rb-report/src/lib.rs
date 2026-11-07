@@ -64,7 +64,7 @@ pub const READS_CODE: &[&str] = &["json", "anon", "sarif", "junit", "trx", "plan
 
 /// Whether `output_type` reads the code layer ([`READS_CODE`]).
 pub fn reads_code(output_type: &str) -> bool {
-    READS_CODE.contains(&output_type)
+    READS_CODE.contains(&canonical(output_type))
 }
 
 /// Every output type, with the wave it lands in, from
@@ -118,7 +118,7 @@ pub const GATING: &[&str] = &[
 
 /// Whether `output_type` gates: its exit code is the error count.
 pub fn gates(output_type: &str) -> bool {
-    GATING.contains(&output_type)
+    GATING.contains(&canonical(output_type))
 }
 
 /// The reporters whose output carries [`ReportOptions::timestamp`]; every other reporter's
@@ -129,12 +129,28 @@ pub const STAMPED: &[&str] = &["err-html", "junit", "markdown", "trx", "teamcity
 
 /// Whether `output_type`'s output carries the run's timestamp.
 pub fn stamps(output_type: &str) -> bool {
-    STAMPED.contains(&output_type)
+    STAMPED.contains(&canonical(output_type))
 }
 
-/// Whether `name` is a known output type. `plugin:<path>` is always accepted syntactically and
-/// resolved at run time ([coverage § Output types](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#output-types)).
+/// Output types known by a second name, each with the name [`OUTPUT_TYPES`] lists it under.
+/// dependency-cruiser 18.3.0 renamed `x-dot-webpage` to `dot-webpage` and kept the old name, and
+/// both give the same bytes ([ADR-0080](../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md),
+/// [plan 0011 Step 7](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#23-steps-for-sub-wave-11c-the-command-line)).
+/// The table keeps `x-dot-webpage` until gate 1's pin moves to 18.7.0 (Step 16).
+pub const ALIASES: &[(&str, &str)] = &[("dot-webpage", "x-dot-webpage")];
+
+/// The name [`OUTPUT_TYPES`] lists `name` under: itself, unless it is one of [`ALIASES`].
+pub fn canonical(name: &str) -> &str {
+    ALIASES
+        .iter()
+        .find(|(alias, _)| *alias == name)
+        .map_or(name, |(_, listed)| listed)
+}
+
+/// Whether `name` is a known output type, under its own name or an alias. `plugin:<path>` is
+/// always accepted syntactically and resolved at run time ([coverage § Output types](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#output-types)).
 pub fn is_output_type(name: &str) -> bool {
+    let name = canonical(name);
     name.starts_with("plugin:") || OUTPUT_TYPES.iter().any(|(n, _)| *n == name)
 }
 
@@ -265,6 +281,7 @@ pub fn render_with(
             None => own,
         }
     };
+    let output_type = canonical(output_type);
     Ok(match output_type {
         "err" | "err-long" => {
             let long = output_type == "err-long";
@@ -646,6 +663,19 @@ mod tests {
     }
 
     #[test]
+    fn an_alias_is_read_as_the_name_the_table_lists() {
+        assert_eq!(canonical("dot-webpage"), "x-dot-webpage");
+        assert_eq!(canonical("x-dot-webpage"), "x-dot-webpage");
+        assert_eq!(canonical("err"), "err");
+        assert_eq!(canonical("pdf"), "pdf");
+        for (alias, listed) in ALIASES {
+            assert!(OUTPUT_TYPES.iter().any(|(n, _)| n == listed), "{alias}");
+            assert!(!OUTPUT_TYPES.iter().any(|(n, _)| n == alias), "{alias}");
+            assert!(is_output_type(alias), "{alias}");
+        }
+    }
+
+    #[test]
     fn knows_every_dependency_cruiser_output_type() {
         for name in [
             "err",
@@ -663,6 +693,7 @@ mod tests {
             "fdot",
             "flat",
             "x-dot-webpage",
+            "dot-webpage",
             "mermaid",
             "d2",
             "html",
@@ -744,6 +775,13 @@ mod tests {
         let page = render("x-dot-webpage", &result, &svg);
         assert_eq!(page.as_ref().map(|r| r.exit_code), Ok(0), "{page:?}");
         assert!(!gates("x-dot-webpage"));
+        // `dot-webpage`, 18.3.0's name, gives the same bytes and the same refusal.
+        assert_eq!(render("dot-webpage", &result, &svg), page);
+        assert_eq!(
+            render("dot-webpage", &result, &o),
+            render("x-dot-webpage", &result, &o)
+        );
+        assert!(!gates("dot-webpage") && !stamps("dot-webpage") && !reads_code("dot-webpage"));
         assert_eq!(
             page.map(|r| r.output),
             Ok(dot_webpage::wrap_in_html("<svg/>"))

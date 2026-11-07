@@ -170,7 +170,7 @@ fn cruise_init_writes_the_configuration_init_writes() -> Result<(), Box<dyn Erro
     let scripts = ok(&run(&dir, &["cruise", "--init", "x-scripts"])?)?;
     assert!(
         scripts.contains(
-            "added run scripts to package.json: rulebearing, rulebearing:text, rulebearing:focus"
+            "added run scripts to package.json: rulebearing, rulebearing:graph, rulebearing:graph:dev, rulebearing:graph:archi, rulebearing:html, rulebearing:text, rulebearing:focus"
         ),
         "{scripts}"
     );
@@ -185,6 +185,10 @@ fn cruise_init_writes_the_configuration_init_writes() -> Result<(), Box<dyn Erro
         [
             "test",
             "rulebearing",
+            "rulebearing:graph",
+            "rulebearing:graph:dev",
+            "rulebearing:graph:archi",
+            "rulebearing:html",
             "rulebearing:text",
             "rulebearing:focus"
         ]

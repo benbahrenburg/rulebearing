@@ -205,6 +205,44 @@ fn x_dot_webpage_draws_with_graphviz_or_exits_2() -> Result<(), Box<dyn Error>> 
     Ok(())
 }
 
+/// `dot-webpage`, dependency-cruiser 18.3.0's name for `x-dot-webpage`, which keeps working: the
+/// same bytes, the same refusal and the same exit code on `cruise` and `fmt`
+/// ([plan 0011 Step 7](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#23-steps-for-sub-wave-11c-the-command-line)).
+#[test]
+fn dot_webpage_is_x_dot_webpage_by_its_new_name() -> Result<(), Box<dyn Error>> {
+    let dir = tree("dot-webpage")?;
+    let empty = dir.join("no-graphviz");
+    std::fs::create_dir_all(&empty)?;
+    let empty = empty.to_string_lossy().into_owned();
+    let saved = run(&dir, &["cruise", "-T", "json", "-f", "result.json", "src"])?;
+    assert_eq!(saved.status.code(), Some(0));
+    // Without GraphViz on PATH, and with the machine's PATH when it has GraphViz.
+    let mut paths = vec![Some(empty.as_str())];
+    if graphviz_installed() {
+        paths.push(None);
+    }
+    for graphviz in paths {
+        for command in [
+            &["cruise", "-T", "{}", "src"][..],
+            &["fmt", "-T", "{}", "result.json"][..],
+        ] {
+            let with = |name: &str| -> Result<Output, Box<dyn Error>> {
+                let args: Vec<&str> = command
+                    .iter()
+                    .map(|a| if *a == "{}" { name } else { *a })
+                    .collect();
+                run_env(&dir, &args, graphviz)
+            };
+            let (new, old) = (with("dot-webpage")?, with("x-dot-webpage")?);
+            assert_eq!(new.status.code(), old.status.code(), "{command:?}");
+            assert_eq!(new.stdout, old.stdout, "{command:?}");
+            assert_eq!(new.stderr, old.stderr, "{command:?}");
+        }
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
 fn fixture(name: &str) -> Result<Vec<u8>, Box<dyn Error>> {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures/wrap-html")

@@ -331,6 +331,51 @@ pub fn apply_flags(
     check_report_patterns(config)
 }
 
+/// `cruise --baseline-mode`, which sets `options.baseline.mode`, and `cruise --baseline [file]`,
+/// as dependency-cruiser 18.7.0's `normalizeCliOptions` lays them over the other flags: the file's entries become the known violations, applied to nothing
+/// (`ignoreKnown: false`, so `--ignore-known` and `--no-ignore-known` give way) and the cache is
+/// off; `cruise` then writes the [`BASELINE_OUTPUT_TYPE`] reporter to the file. A file that does not exist yet is an empty
+/// baseline, with upstream's warning returned for stderr; one that cannot be read is an error
+/// ([plan 0011 Step 6](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#23-steps-for-sub-wave-11c-the-command-line)).
+///
+/// # Errors
+/// [`ConfigError`] naming the file when it exists but cannot be read as a known-violations file.
+pub fn baseline_flag(
+    config: &mut Config,
+    args: &CruiseArgs,
+    ctx: &Context<'_>,
+) -> Result<Option<String>, ConfigError> {
+    if let Some(mode) = args.baseline_mode {
+        config
+            .options
+            .baseline
+            .get_or_insert_with(Default::default)
+            .mode = Some(mode.mode());
+    }
+    let Some(file) = &args.baseline else {
+        return Ok(None);
+    };
+    let path = ctx.resolve(file);
+    let (entries, warning) = if path.exists() {
+        (rb_config::load::known_violations_file(&path)?, None)
+    } else {
+        (
+            Vec::new(),
+            Some(format!(
+                "\u{203c} Known violations file '{file}' does not exist yet. Will assume an empty current violations set and create a new one instead.\n"
+            )),
+        )
+    };
+    config.known_violations = entries;
+    config.known_violations_given = true;
+    config.options.ignore_known = Some(false);
+    config.options.cache = Some(rb_config::model::CacheSetting::Off);
+    Ok(warning)
+}
+
+/// The reporter `--baseline` writes with.
+pub const BASELINE_OUTPUT_TYPE: &str = "baseline";
+
 /// The folder `--cache` without a value, or `cache: true`, means for this configuration:
 /// dependency-cruiser's for a dependency-cruiser file, Rulebearing's for a native one or none.
 pub fn default_cache_folder(config: &Config) -> &'static str {

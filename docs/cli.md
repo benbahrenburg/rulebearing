@@ -6,7 +6,7 @@ One binary, `rulebearing`. `rulebearing --help` and `rulebearing <command> --hel
 
 | Command | For | dependency-cruiser |
 | --- | --- | --- |
-| `cruise [paths]` | Extract, evaluate, report | `depcruise`, with the same flags and short forms (`-T`, `-f`, `-c`, `-I`, `-F`, `-R`, `-H`, `-x`, `-S`, `-X`, `-P`, `-p`, `-m`, `-i`, `-A`), `--webpack-config`, `--affected [revision]` and `--init [oneshot]` |
+| `cruise [paths]` | Extract, evaluate, report | `depcruise`, with the same flags and short forms (`-T`, `-f`, `-c`, `-I`, `-F`, `-R`, `-H`, `-x`, `-S`, `-X`, `-P`, `-p`, `-m`, `-i`, `-A`), `--webpack-config`, `--affected [revision]`, `--init [oneshot]`, and 18.3.0's `--baseline [file]` and `--baseline-mode` ([below](#baselines)) |
 | `fmt <result.json>` | Re-report a saved result without extracting | `depcruise-fmt`, with its short forms (`-T`, `-f`, `-I`, `-F`, `-R`, `-H`, `-x`, `-S`, `-e`, `-p`) |
 | `rules [--json]` | Every rule with its family, severity, lifecycle fields and match counts | |
 | `rules --unused [--releases N]` | The rules that matched nothing on either side in each of the last `N` snapshots; [below](#snapshots-changelog-and-unused-rules) | |
@@ -31,9 +31,9 @@ One binary, `rulebearing`. `rulebearing --help` and `rulebearing <command> --hel
 | `changelog --since V [--to V]` | New edges across boundaries, retired rules and ratchets that fell between two snapshots, as `markdown` or `json`; [below](#snapshots-changelog-and-unused-rules) | |
 | `serve --mcp`, `serve --lsp` | The query commands as MCP tools, or the findings as editor diagnostics, over standard input and output from one warm graph; [serve.md](serve.md) | |
 | `fleet [manifest]` | One run, one report across sibling repositories: each cruised with its own configuration and cache, the fleet-wide rules over the union of their graphs, joined by the edges `edges.yaml` declares; [below](#fleets-and-declared-edges) | |
-| `wrap-html` | An SVG read from stdin, written between the header and the footer of the page `x-dot-webpage` writes; [below](#wrap-html) | `depcruise-wrap-stream-in-html` |
+| `wrap-html` | An SVG read from stdin, written between the header and the footer of the page `dot-webpage` writes; [below](#wrap-html) | `depcruise-wrap-stream-in-html` |
 
-`cruise --init [oneshot]` is `depcruise --init` without the questions: it writes what `init` writes, to `--config FILE` or `rulebearing.yaml`, with `--preset typescript,dotnet,python` naming the languages instead of detecting them. `yes`, a bare `--init` and any other name write the configuration; `x-scripts` also adds `rulebearing`, `rulebearing:text` and `rulebearing:focus` run scripts to `package.json` after the existing ones and, as dependency-cruiser does, leaves an existing configuration be. dependency-cruiser's graph and HTML scripts need the `dot`, `archi` and `err-html` reporters and `wrap-html`, and are not written until those exist. One language extends its own preset first, `[rulebearing:python, rulebearing:recommended]`, so its exclusions win; several extend `rulebearing:recommended` ([config.md](config.md#presets)).
+`cruise --init [oneshot]` is `depcruise --init` without the questions: it writes what `init` writes, to `--config FILE` or `rulebearing.yaml`, with `--preset typescript,dotnet,python` naming the languages instead of detecting them. `yes`, a bare `--init` and any other name write the configuration; `x-scripts` also adds dependency-cruiser 18.7.0's seven run scripts to `package.json` after the existing ones, named `rulebearing`, `rulebearing:graph`, `rulebearing:graph:dev`, `rulebearing:graph:archi`, `rulebearing:html`, `rulebearing:text` and `rulebearing:focus`, with `rulebearing cruise` in place of `dependency-cruiser` and `rulebearing wrap-html` in place of `depcruise-wrap-stream-in-html`, and, as dependency-cruiser does, leaves an existing configuration be. The two graph scripts draw with `dot-webpage`, so they need GraphViz' `dot` on the path; `rulebearing:graph:dev` also pipes into the `browser` program, as upstream's does. One language extends its own preset first, `[rulebearing:python, rulebearing:recommended]`, so its exclusions win; several extend `rulebearing:recommended` ([config.md](config.md#presets)).
 
 `--preset` also takes the framework presets, which are opinions and off unless named ([presets/frameworks](../presets/frameworks/README.md)): `init --preset nextjs` keeps the languages found and adds `rulebearing:nextjs` after them, `init --preset python,django` names both. A framework preset's rules get init's usual treatment: a rule whose `from` side matches nothing in the repository is left out with a `severity: ignore` entry that names it (delete the entry to turn it on), and every current finding is baselined, so the configuration passes on its first run.
 
@@ -50,6 +50,31 @@ A known-violations file is a JSON array of `knownViolations` entries, each keyed
 | `format` | the file only | the same entries, sorted by rule, `from`, `to` and `id` | 0 |
 
 The mode is `--baseline-mode`, else `options.baseline.mode`, else `full`. `shrink-only` is import-linter's unmatched-ignore alerting ([design § import-linter contracts](artifacts/design.md#import-linter-contracts-for-the-python-teams-who-know-them)): run it in CI and a fixed finding fails the build until its entry leaves the baseline. `--expires`, `--owner` and `--reason` fill those fields on each entry written that lacks them; an entry past its `expires` date stops applying the day after and fails the run ([ADR-0031](adr/0031-a-saved-result-carries-what-the-exit-code-counts.md)).
+
+### `cruise --baseline`
+
+`cruise --baseline [file]` is dependency-cruiser 18.3.0's flag on the main command ([ADR-0080](adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)): it reads the file (default `.dependency-cruiser-known-violations.json`) as the known violations without applying them, writes the `baseline` reporter's output back to it, and prints what changed on stderr, as upstream prints it:
+
+```text
+
+baseline  : 6 violations
+
+  new     : 1 (running in 'full' mode => added to the baseline)
+  same    : 5
+  stale   : 0
+```
+
+It wins over `--output-type`, `--output-to`, `--ignore-known` and `--no-ignore-known`, and turns the cache off. A file that does not exist yet is an empty baseline, with upstream's warning; one that exists but is not a known-violations file exits 3 naming it. `--baseline-mode full|shrink-only|format`, with or without `--baseline`, sets `options.baseline.mode` for the run, so `-T baseline` writes in that mode too, and prints the same lines. The file name is optional, so give the paths first: `rulebearing cruise src --baseline`.
+
+`cruise --baseline` follows upstream and `rulebearing baseline` keeps [ADR-0037](adr/0037-baseline-modes.md)'s modes; where they differ, each difference is decided by the upstream test named:
+
+| | `cruise --baseline` (dependency-cruiser 18.7.0) | `rulebearing baseline` (ADR-0037) | Upstream test |
+| --- | --- | --- | --- |
+| `shrink-only` exit code | 0 | the number of entries removed | `test/report/baseline/baseline.spec.mjs` (`exitCode` 0 in every mode) |
+| `shrink-only` without the file | an empty baseline, with a warning; writes `[]` | `options.knownViolations`, or exit 3 | `test/cli/normalize-cli-options.spec.mjs`, "--baseline with a non-existing file ..." |
+| `format` | cruises, and writes the known entries in `compareViolations` order | reads the file only, and sorts by rule, `from`, `to` and `id` | `test/report/baseline/baseline.spec.mjs`, "formats the existing baseline without updating it in format mode" |
+| `full` and an entry's `expires`, `owner` and `reason` | the current violations as they are | an entry already in the file keeps them; `--expires`, `--owner` and `--reason` fill them | `test/report/baseline/baseline.spec.mjs`, "returns the violations in a json object" |
+| stderr | the counts above | one line per entry removed, and a warning for findings not added | `test/cli/index.spec.mjs`, "writes baseline reporter metadata to stderr" |
 
 ## diff
 
@@ -142,7 +167,7 @@ The layers, slices and lifecycle fields come from the configuration in the worki
 
 ## wrap-html
 
-`wrap-html` is `depcruise-wrap-stream-in-html`: it writes the header of the `x-dot-webpage` page (its stylesheet and hint box), then standard input unchanged, then the footer (the highlighting script), so a graph drawn by GraphViz becomes the interactive page without running a reporter ([coverage tab § Command line](artifacts/dependency-cruiser-18.2.0-coverage.md#command-line)):
+`wrap-html` is `depcruise-wrap-stream-in-html`: it writes the header of the `dot-webpage` page (its stylesheet and hint box), then standard input unchanged, then the footer (the highlighting script), so a graph drawn by GraphViz becomes the interactive page without running a reporter ([coverage tab § Command line](artifacts/dependency-cruiser-18.2.0-coverage.md#command-line)):
 
 ```sh
 rulebearing cruise src -T dot | dot -T svg | rulebearing wrap-html > dependency-graph.html

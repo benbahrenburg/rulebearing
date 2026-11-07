@@ -127,7 +127,7 @@ pub enum Command {
     /// Translate ArchUnitNET, NetArchTest, import-linter or eslint rules into a rulebearing.yaml
     #[command(subcommand)]
     Import(crate::cmd::import::ImportCommand),
-    /// Wrap an SVG read from stdin in the page x-dot-webpage writes: dependency-cruiser's
+    /// Wrap an SVG read from stdin in the page dot-webpage writes: dependency-cruiser's
     /// depcruise-wrap-stream-in-html
     WrapHtml(crate::cmd::wrap_html::WrapHtmlArgs),
     /// Conformance gate 1 layer 2's protocol (hidden).
@@ -227,6 +227,30 @@ impl ModeArg {
         match self {
             Self::Compiled => rb_model::DotnetMode::Compiled,
             Self::Source => rb_model::DotnetMode::Source,
+        }
+    }
+}
+
+/// `--baseline-mode` values on `cruise`: dependency-cruiser 18.7.0's, with its meanings
+/// ([plan 0011 Step 6](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#23-steps-for-sub-wave-11c-the-command-line)).
+/// `rulebearing baseline` takes the same names with ADR-0037's meanings.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum BaselineModeArg {
+    /// Replace everything: the current violations (the default)
+    Full,
+    /// Remove fixed violations, but add no new ones
+    ShrinkOnly,
+    /// Rewrite the known violations, adding and removing nothing
+    Format,
+}
+
+impl BaselineModeArg {
+    /// The mode `options.baseline.mode` carries.
+    pub fn mode(self) -> rb_config::model::BaselineMode {
+        match self {
+            Self::Full => rb_config::model::BaselineMode::Full,
+            Self::ShrinkOnly => rb_config::model::BaselineMode::ShrinkOnly,
+            Self::Format => rb_config::model::BaselineMode::Format,
         }
     }
 }
@@ -345,16 +369,13 @@ pub struct CruiseArgs {
     pub graph: Option<String>,
     /// Output type: err, err-long, err-html, json, text, csv, teamcity, azure-devops,
     /// github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi, cdot, flat, fdot,
-    /// x-dot-webpage, mermaid, d2, metrics, html, markdown, anon, plantuml, null
+    /// dot-webpage (or x-dot-webpage), mermaid, d2, metrics, html, markdown, anon, plantuml, null
     #[arg(short = 'T', long, value_name = "TYPE")]
     pub output_type: Option<String>,
     /// plantuml: what the diagram's nodes are (slices, types, namespaces or folders); wins over
     /// reporterOptions.plantuml.from
     #[arg(long, value_name = "NODES", value_parser = ["slices", "types", "namespaces", "folders"])]
     pub from: Option<String>,
-    /// File to write output to; - for stdout
-    #[arg(short = 'f', long, value_name = "FILE")]
-    pub output_to: Option<String>,
     /// Calculate stability metrics (instability, folders)
     #[arg(short = 'm', long, overrides_with = "no_metrics")]
     pub metrics: bool,
@@ -362,6 +383,9 @@ pub struct CruiseArgs {
     /// wins). Hidden, as dependency-cruiser hides it
     #[arg(long, hide = true, overrides_with = "metrics")]
     pub no_metrics: bool,
+    /// File to write output to; - for stdout
+    #[arg(short = 'f', long, value_name = "FILE")]
+    pub output_to: Option<String>,
     /// Only include modules matching the regex
     #[arg(short = 'I', long, value_name = "REGEX")]
     pub include_only: Option<String>,
@@ -374,18 +398,52 @@ pub struct CruiseArgs {
     /// Only include modules matching the regex and every module that reaches them
     #[arg(short = 'R', long, value_name = "REGEX")]
     pub reaches: Option<String>,
+    /// Only report the modules changed since REVISION (default main), committed or not, and
+    /// every module that reaches them, as dependency-cruiser does; with a rulebearing.* configuration,
+    /// also every violation on their edges that leave them. .NET source files map to their types' modules
+    #[arg(short = 'A', long, value_name = "REVISION", num_args = 0..=1,
+          default_missing_value = rb_config::model::DEFAULT_AFFECTED_REVISION)]
+    pub affected: Option<String>,
+    /// With --affected or options.affected: how many steps of dependents to include; 0 (the
+    /// default) for all
+    #[arg(long, value_name = "NUMBER")]
+    pub affected_depth: Option<u32>,
     /// Mark modules matching the regex as highlighted
     #[arg(short = 'H', long, value_name = "REGEX")]
     pub highlight: Option<String>,
     /// Exclude all modules matching the regex
     #[arg(short = 'x', long, value_name = "REGEX")]
     pub exclude: Option<String>,
-    /// Collapse modules to a folder depth (a single digit) or to the first match of a regex
-    #[arg(short = 'S', long, value_name = "REGEX-OR-DEPTH")]
-    pub collapse: Option<String>,
     /// Include modules matching the regex but do not follow their dependencies
     #[arg(short = 'X', long, value_name = "REGEX")]
     pub do_not_follow: Option<String>,
+    /// Collapse modules to a folder depth (a single digit) or to the first match of a regex
+    #[arg(short = 'S', long, value_name = "REGEX-OR-DEPTH")]
+    pub collapse: Option<String>,
+    /// The tsconfig to resolve paths and baseUrl from
+    #[arg(long, value_name = "FILE", num_args = 0..=1, default_missing_value = "tsconfig.json")]
+    pub ts_config: Option<String>,
+    /// Resolve as the webpack configuration FILE does (default webpack.config.js), evaluated in
+    /// the sandbox
+    #[arg(long, value_name = "FILE", num_args = 0..=1, default_missing_value = "webpack.config.js")]
+    pub webpack_config: Option<String>,
+    /// A webpack configuration, or its `resolve` block, already evaluated to JSON; wins over
+    /// --webpack-config and webpackConfig
+    #[arg(long, value_name = "FILE")]
+    pub webpack_config_json: Option<String>,
+    /// Keep TypeScript edges that vanish in compilation: true, false or specify
+    #[arg(long, value_name = "VALUE", num_args = 0..=1, default_missing_value = "true")]
+    pub ts_pre_compilation_deps: Option<String>,
+    /// Create or update a known-violations baseline: write the baseline reporter's output to FILE
+    /// with the file's entries as the known violations, and print what changed on stderr. Implies
+    /// --no-ignore-known and --no-cache; wins over --output-type and --output-to (default:
+    /// .dependency-cruiser-known-violations.json)
+    #[arg(long, value_name = "FILE", num_args = 0..=1,
+          default_missing_value = rb_config::load::DEFAULT_KNOWN_VIOLATIONS_FILE)]
+    pub baseline: Option<String>,
+    /// What --baseline and the baseline reporter write; wins over options.baseline.mode
+    #[arg(long, value_enum, value_name = "MODE")]
+    pub baseline_mode: Option<BaselineModeArg>,
     /// Known violations: the file's entries are reported at severity ignore
     #[command(flatten)]
     pub known: KnownArgs,
@@ -415,33 +473,9 @@ pub struct CruiseArgs {
     /// dependency-cruiser hides it
     #[arg(long, hide = true, overrides_with = "cache")]
     pub no_cache: bool,
-    /// Keep TypeScript edges that vanish in compilation: true, false or specify
-    #[arg(long, value_name = "VALUE", num_args = 0..=1, default_missing_value = "true")]
-    pub ts_pre_compilation_deps: Option<String>,
-    /// The tsconfig to resolve paths and baseUrl from
-    #[arg(long, value_name = "FILE", num_args = 0..=1, default_missing_value = "tsconfig.json")]
-    pub ts_config: Option<String>,
     /// Keep symlinked paths rather than their targets
     #[arg(long)]
     pub preserve_symlinks: bool,
-    /// Resolve as the webpack configuration FILE does (default webpack.config.js), evaluated in
-    /// the sandbox
-    #[arg(long, value_name = "FILE", num_args = 0..=1, default_missing_value = "webpack.config.js")]
-    pub webpack_config: Option<String>,
-    /// A webpack configuration, or its `resolve` block, already evaluated to JSON; wins over
-    /// --webpack-config and webpackConfig
-    #[arg(long, value_name = "FILE")]
-    pub webpack_config_json: Option<String>,
-    /// Extract CoffeeScript and LiveScript files (.coffee, .litcoffee, .coffee.md, .ls, .cjsx,
-    /// .csx) by running the repository's own dependency-cruiser with Node; their edges are
-    /// marked sidecar: true. Without it such a file stops the run (exit 2)
-    #[arg(long, value_enum, value_name = "RUNTIME")]
-    pub sidecar: Option<SidecarArg>,
-    /// How .NET is read: compiled (the default) from the built assemblies and PDBs, or source
-    /// from the .cs files without a build, every edge marked approximate; wins over
-    /// languages.dotnet.mode
-    #[arg(long, value_enum, value_name = "MODE")]
-    pub mode: Option<ModeArg>,
     /// Show progress on stderr
     #[arg(short = 'p', long, value_name = "TYPE", num_args = 0..=1, default_missing_value = "cli-feedback")]
     pub progress: Option<ProgressType>,
@@ -466,6 +500,16 @@ pub struct CruiseArgs {
         requires = "init"
     )]
     pub preset: Vec<crate::cmd::init::Preset>,
+    /// Extract CoffeeScript and LiveScript files (.coffee, .litcoffee, .coffee.md, .ls, .cjsx,
+    /// .csx) by running the repository's own dependency-cruiser with Node; their edges are
+    /// marked sidecar: true. Without it such a file stops the run (exit 2)
+    #[arg(long, value_enum, value_name = "RUNTIME")]
+    pub sidecar: Option<SidecarArg>,
+    /// How .NET is read: compiled (the default) from the built assemblies and PDBs, or source
+    /// from the .cs files without a build, every edge marked approximate; wins over
+    /// languages.dotnet.mode
+    #[arg(long, value_enum, value_name = "MODE")]
+    pub mode: Option<ModeArg>,
     /// Do not check whether rules match anything; the same as --liveness off
     #[arg(long)]
     pub no_liveness: bool,
@@ -490,16 +534,6 @@ pub struct CruiseArgs {
     /// there are errors, exit 0 always
     #[arg(long)]
     pub from_hook: bool,
-    /// Only report the modules changed since REVISION (default main), committed or not, and
-    /// every module that reaches them, as dependency-cruiser does; with a rulebearing.* configuration,
-    /// also every violation on their edges that leave them. .NET source files map to their types' modules
-    #[arg(short = 'A', long, value_name = "REVISION", num_args = 0..=1,
-          default_missing_value = rb_config::model::DEFAULT_AFFECTED_REVISION)]
-    pub affected: Option<String>,
-    /// With --affected or options.affected: how many steps of dependents to include; 0 (the
-    /// default) for all
-    #[arg(long, value_name = "NUMBER")]
-    pub affected_depth: Option<u32>,
     /// How the error count becomes the exit code: default (the count) or strict (10 + the count,
     /// so 2 and 3 are never a count)
     #[arg(long, value_enum, value_name = "MODE", default_value_t = ExitCodeMode::Default)]
@@ -520,7 +554,8 @@ pub struct FmtArgs {
     pub input: String,
     /// Output type: any of cruise's (err, err-long, err-html, json, text, csv, teamcity,
     /// azure-devops, github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi,
-    /// cdot, flat, fdot, x-dot-webpage, mermaid, d2, metrics, html, markdown, anon, null)
+    /// cdot, flat, fdot, dot-webpage (or x-dot-webpage), mermaid, d2, metrics, html, markdown,
+    /// anon, null)
     #[arg(short = 'T', long, value_name = "TYPE", default_value = "err")]
     pub output_type: String,
     /// File to write output to; - for stdout
