@@ -633,11 +633,15 @@ pub fn all_extensions(cwd: &Path) -> Vec<Extension> {
 
 /// dependency-cruiser's `getAvailableTranspilers()` for a cruise from `cwd`.
 pub fn available_transpilers(cwd: &Path) -> Vec<Transpiler> {
-    let side = sidecar(cwd);
+    transpilers(sidecar(cwd).as_ref())
+}
+
+/// The transpilers, each read natively or by `side`.
+fn transpilers(side: Option<&(String, Vec<String>)>) -> Vec<Transpiler> {
     TRANSPILERS
         .iter()
         .map(|(name, range)| {
-            let (available, current_version) = reads(name, side.as_ref());
+            let (available, current_version) = reads(name, side);
             Transpiler {
                 name,
                 version: range.unwrap_or("*"),
@@ -646,6 +650,85 @@ pub fn available_transpilers(cwd: &Path) -> Vec<Transpiler> {
             }
         })
         .collect()
+}
+
+/// The transpilers as `summary.environment.transpilersFound` records them.
+fn transpilers_found(transpilers: &[Transpiler]) -> Vec<rb_model::TranspilerFound> {
+    transpilers
+        .iter()
+        .map(|t| rb_model::TranspilerFound {
+            name: t.name.to_owned(),
+            version: t.version.to_owned(),
+            available: t.available,
+            current_version: t.current_version.clone(),
+        })
+        .collect()
+}
+
+/// Node's name for the processor (`process.arch`).
+fn node_arch(arch: &str) -> &str {
+    match arch {
+        "x86_64" => "x64",
+        "aarch64" => "arm64",
+        "x86" => "ia32",
+        "powerpc64" => "ppc64",
+        other => other,
+    }
+}
+
+/// Node's name for the operating system (`process.platform`).
+fn node_platform(os: &str) -> &str {
+    match os {
+        "macos" => "darwin",
+        "windows" => "win32",
+        other => other,
+    }
+}
+
+/// `summary.environment` for a cruise from `cwd` with `options` (its `optionsUsed`), written
+/// only when dependency-cruiser 18.7.0's `verify-environment.mjs` finds an issue
+/// ([`rb_rules::summarize::environment_issues`]). The compilers it checks (`typescript`, `swc`,
+/// `babel`) are read natively, so a build with the TypeScript extractor has all three and never
+/// writes one; a build without it reads no TypeScript, which is what the issue says. The facts
+/// beside the issues are this binary's: its version, `-` for the Node versions, as no Node
+/// runs it, and the processor and system in Node's names with `-` for the release, which the
+/// binary does not read
+/// ([ADR-0082](../../../docs/adr/0082-summary-environment-is-written-when-it-has-an-issue.md),
+/// [plan 0011, Step 14](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#26-steps-for-sub-wave-11f-environment-warnings)).
+pub fn environment(cwd: &Path, options: &Map<String, Value>) -> Option<rb_model::Environment> {
+    // The sidecar is asked only when there is an issue: the three compilers do not depend on it.
+    environment_checked(cwd, options, &transpilers_found(&transpilers(None)))
+}
+
+/// [`environment`] with the issues found against `checked`.
+fn environment_checked(
+    cwd: &Path,
+    options: &Map<String, Value>,
+    checked: &[rb_model::TranspilerFound],
+) -> Option<rb_model::Environment> {
+    let issues = rb_rules::summarize::environment_issues(options, checked);
+    if issues.is_empty() {
+        return None;
+    }
+    Some(rb_model::Environment {
+        version: env!("CARGO_PKG_VERSION").to_owned(),
+        node_version_supported: "-".to_owned(),
+        node_version_found: "-".to_owned(),
+        os_version_found: format!(
+            "{} {}@-",
+            node_arch(std::env::consts::ARCH),
+            node_platform(std::env::consts::OS)
+        ),
+        transpilers_found: transpilers_found(&available_transpilers(cwd)),
+        extensions_found: all_extensions(cwd)
+            .into_iter()
+            .map(|e| rb_model::ExtensionFound {
+                extension: e.extension.to_owned(),
+                available: e.available,
+            })
+            .collect(),
+        issues: Some(issues),
+    })
 }
 
 #[cfg(test)]
@@ -768,5 +851,147 @@ mod tests {
             .exit,
             RunExit::InvalidConfig
         );
+    }
+}
+
+/// `summary.environment`: written when, and only when, an option needs a compiler this build
+/// lacks (plan 0011, Step 14; ADR-0082).
+#[cfg(test)]
+mod environment_tests {
+    use super::*;
+
+    fn object(value: &Value) -> Map<String, Value> {
+        value.as_object().cloned().unwrap_or_default()
+    }
+
+    #[test]
+    fn the_checked_compilers_are_read_natively_so_the_sidecar_cannot_change_them() {
+        for name in ["typescript", "swc", "babel"] {
+            assert!(
+                TRANSPILERS
+                    .iter()
+                    .any(|(n, range)| *n == name && range.is_none()),
+                "{name}"
+            );
+            let side = ("18.7.0".to_owned(), Vec::new());
+            assert_eq!(
+                transpilers(None)
+                    .iter()
+                    .find(|t| t.name == name)
+                    .map(|t| t.available),
+                transpilers(Some(&side))
+                    .iter()
+                    .find(|t| t.name == name)
+                    .map(|t| t.available),
+                "{name}"
+            );
+        }
+    }
+
+    #[cfg(feature = "extract-ts")]
+    #[test]
+    fn a_build_with_the_typescript_extractor_writes_none() {
+        let cwd = std::env::temp_dir();
+        for options in [
+            json!({ "tsConfig": { "fileName": "tsconfig.json" } }),
+            json!({ "tsPreCompilationDeps": true, "detectJSDocImports": true, "parser": "tsc" }),
+            json!({ "parser": "swc", "babelConfig": { "fileName": ".babelrc" } }),
+            json!({}),
+        ] {
+            assert_eq!(environment(&cwd, &object(&options)), None, "{options}");
+        }
+    }
+
+    #[cfg(not(feature = "extract-ts"))]
+    #[test]
+    fn a_build_without_the_typescript_extractor_warns_of_a_tsconfig() {
+        let cwd = std::env::temp_dir();
+        let options = object(&json!({ "tsConfig": { "fileName": "tsconfig.json" } }));
+        let names: Vec<String> = environment(&cwd, &options)
+            .and_then(|e| e.issues)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|i| i.name)
+            .collect();
+        assert_eq!(names, ["missing-typescript-transpiler"]);
+        assert_eq!(environment(&cwd, &Map::new()), None);
+    }
+
+    #[test]
+    fn an_issue_writes_the_whole_block_with_this_binary_s_facts() {
+        let cwd = std::env::temp_dir();
+        let missing: Vec<rb_model::TranspilerFound> = transpilers(None)
+            .iter()
+            .map(|t| rb_model::TranspilerFound {
+                name: t.name.to_owned(),
+                version: t.version.to_owned(),
+                available: false,
+                current_version: "-".to_owned(),
+            })
+            .collect();
+        let options = object(&json!({ "babelConfig": { "fileName": ".babelrc" } }));
+        let found = environment_checked(&cwd, &options, &missing);
+        assert!(found.is_some(), "an issue writes the block");
+        let Some(env) = found else { return };
+        assert_eq!(env.version, env!("CARGO_PKG_VERSION"));
+        assert_eq!(
+            (
+                env.node_version_supported.as_str(),
+                env.node_version_found.as_str()
+            ),
+            ("-", "-")
+        );
+        assert_eq!(
+            env.os_version_found,
+            format!(
+                "{} {}@-",
+                node_arch(std::env::consts::ARCH),
+                node_platform(std::env::consts::OS)
+            )
+        );
+        assert_eq!(
+            env.transpilers_found
+                .iter()
+                .map(|t| t.name.as_str())
+                .collect::<Vec<_>>(),
+            TRANSPILERS.iter().map(|(n, _)| *n).collect::<Vec<_>>()
+        );
+        assert_eq!(env.extensions_found.len(), EXTENSIONS.len());
+        assert_eq!(
+            env.issues
+                .unwrap_or_default()
+                .iter()
+                .map(|i| i.name.as_str())
+                .collect::<Vec<_>>(),
+            ["missing-babel-transpiler"]
+        );
+        assert_eq!(environment_checked(&cwd, &Map::new(), &missing), None);
+        // Determinism: the same inputs give the same block.
+        assert_eq!(
+            environment_checked(&cwd, &options, &missing),
+            environment_checked(&cwd, &options, &missing)
+        );
+    }
+
+    #[test]
+    fn node_s_names_for_the_processor_and_the_system() {
+        for (rust, node) in [
+            ("x86_64", "x64"),
+            ("aarch64", "arm64"),
+            ("x86", "ia32"),
+            ("powerpc64", "ppc64"),
+            ("arm", "arm"),
+            ("riscv64", "riscv64"),
+        ] {
+            assert_eq!(node_arch(rust), node, "{rust}");
+        }
+        for (rust, node) in [
+            ("macos", "darwin"),
+            ("windows", "win32"),
+            ("linux", "linux"),
+            ("freebsd", "freebsd"),
+        ] {
+            assert_eq!(node_platform(rust), node, "{rust}");
+        }
     }
 }

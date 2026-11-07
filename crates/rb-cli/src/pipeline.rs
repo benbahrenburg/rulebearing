@@ -769,6 +769,8 @@ pub fn evaluate_document(
     document.summary.sidecar = sidecar;
     document.summary.vacuous_rules = vacuous_rules;
     document.summary.affected = affected;
+    document.summary.environment =
+        crate::api::environment(&ctx.cwd, &document.summary.options_used);
     Ok(Run {
         vacuous,
         rule_stats,
