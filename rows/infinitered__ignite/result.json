@@ -1,0 +1,23 @@
+{
+  "repo": "infinitered/ignite",
+  "sha": "e829d2f922c5568a59a77bfb6232aeb500be3f13",
+  "role": "oracle",
+  "tool": "dependency-cruiser",
+  "status": "ok",
+  "detail": "dependency-cruiser@17.0.2",
+  "incumbent": {
+    "wall_seconds": 0.47,
+    "max_rss_kb": 101932,
+    "exit_code": 0
+  },
+  "rulebearing": {
+    "wall_seconds": 0.06,
+    "max_rss_kb": 22524,
+    "exit_code": 0
+  },
+  "regression": {
+    "current": 0.06,
+    "baseline": 0.06,
+    "baseline_sha": "b23e86849f814a9bcf9e87696786d7a30d08c9ef"
+  }
+}

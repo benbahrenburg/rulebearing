@@ -1,0 +1,23 @@
+{
+  "repo": "ag-grid/ag-grid",
+  "sha": "1a7979c4106fba6c9149f3b8cc13e5c7f4543323",
+  "role": "oracle",
+  "tool": "dependency-cruiser",
+  "status": "ok",
+  "detail": "dependency-cruiser@17.3.10",
+  "incumbent": {
+    "wall_seconds": 0.36,
+    "max_rss_kb": 86852,
+    "exit_code": 0
+  },
+  "rulebearing": {
+    "wall_seconds": 0.58,
+    "max_rss_kb": 162180,
+    "exit_code": 0
+  },
+  "regression": {
+    "current": 0.58,
+    "baseline": 0.58,
+    "baseline_sha": "b23e86849f814a9bcf9e87696786d7a30d08c9ef"
+  }
+}

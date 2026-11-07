@@ -1,0 +1,22 @@
+{
+  "repo": "DrJohnMelville/Pdf",
+  "sha": "2e9eef3d4af15391809d9a79253e6fff0058d668",
+  "as-written": {
+    "gate": 0,
+    "analyzer": 0,
+    "agreeing": 0,
+    "onlyGate": [],
+    "onlyAnalyzer": [],
+    "differences": 0
+  },
+  "negated": {
+    "gate": 2999,
+    "analyzer": 2999,
+    "agreeing": 2999,
+    "onlyGate": [],
+    "onlyAnalyzer": [],
+    "differences": 0
+  },
+  "leftToCruise": [],
+  "agrees": true
+}

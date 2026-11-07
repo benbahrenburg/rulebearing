@@ -1,0 +1,22 @@
+{
+  "repo": "NeVeSpl/NetArchTest.eNhancedEdition",
+  "sha": "7f29bdf5f24368dccad27b8e3ec52a807e813504",
+  "as-written": {
+    "gate": 0,
+    "analyzer": 0,
+    "agreeing": 0,
+    "onlyGate": [],
+    "onlyAnalyzer": [],
+    "differences": 0
+  },
+  "negated": {
+    "gate": 0,
+    "analyzer": 0,
+    "agreeing": 0,
+    "onlyGate": [],
+    "onlyAnalyzer": [],
+    "differences": 0
+  },
+  "leftToCruise": [],
+  "agrees": true
+}

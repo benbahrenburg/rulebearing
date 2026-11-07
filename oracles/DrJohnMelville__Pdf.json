@@ -1,0 +1,292 @@
+{
+  "repo": "DrJohnMelville/Pdf",
+  "sha": "2e9eef3d4af15391809d9a79253e6fff0058d668",
+  "tool": "netarchtest",
+  "tests": "Src/Melville.Pdf.DataModelTests/Architecture",
+  "status": "compared",
+  "detail": "",
+  "summary": {
+    "total": 28,
+    "agree": 16,
+    "disagree": 0,
+    "stays": 0,
+    "not-imported": 12,
+    "error": 0
+  },
+  "rules": {
+    "imported": 16,
+    "commentedOut": 1,
+    "withoutTest": []
+  },
+  "outOfScope": 0,
+  "results": [
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.LowLevelArchitecture.BannedDependencies(reference: \"Melville.Pdf.LowLevel.Filters\", decl: \"Melville.Pdf.LowLevel.Parsing\")",
+      "dotnet": "passed",
+      "rules": [
+        "banned-dependencies-3"
+      ],
+      "rulebearing": "passed",
+      "verdict": "agree"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.LowLevelArchitecture.BannedDependencies(reference: \"Melville.Pdf.LowLevel.Filters\", decl: \"Melville.Pdf.LowLevel.Writers\")",
+      "dotnet": "passed",
+      "rules": [
+        "banned-dependencies-6"
+      ],
+      "rulebearing": "passed",
+      "verdict": "agree"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.LowLevelArchitecture.BannedDependencies(reference: \"Melville.Pdf.LowLevel.Model\", decl: \"Melville.Pdf.LowLevel.Parsing\")",
+      "dotnet": "passed",
+      "rules": [
+        "banned-dependencies"
+      ],
+      "rulebearing": "passed",
+      "verdict": "agree"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.LowLevelArchitecture.BannedDependencies(reference: \"Melville.Pdf.LowLevel.Model\", decl: \"Melville.Pdf.LowLevel.Writers\")",
+      "dotnet": "passed",
+      "rules": [
+        "banned-dependencies-4"
+      ],
+      "rulebearing": "passed",
+      "verdict": "agree"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.LowLevelArchitecture.BannedDependencies(reference: \"Melville.Pdf.LowLevel.Visitors\", decl: \"Melville.Pdf.LowLevel.Parsing\")",
+      "dotnet": "passed",
+      "rules": [
+        "banned-dependencies-2"
+      ],
+      "rulebearing": "passed",
+      "verdict": "agree"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.LowLevelArchitecture.BannedDependencies(reference: \"Melville.Pdf.LowLevel.Visitors\", decl: \"Melville.Pdf.LowLevel.Writers\")",
+      "dotnet": "passed",
+      "rules": [
+        "banned-dependencies-5"
+      ],
+      "rulebearing": "passed",
+      "verdict": "agree"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.LowLevelArchitecture.CabinExternalDependencies(localNamespace: \"Melville.Pdf.LowLevel.Filters.CCITTFaxDecodeFilter\"···, foreignNamespace: \"Melville.CCITT\")",
+      "dotnet": "passed",
+      "rules": [
+        "cabin-external-dependencies",
+        "cabin-external-dependencies-2",
+        "cabin-external-dependencies-3",
+        "cabin-external-dependencies-4"
+      ],
+      "rulebearing": "passed",
+      "verdict": "agree"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.LowLevelArchitecture.CabinExternalDependencies(localNamespace: \"Melville.Pdf.LowLevel.Filters.Jbig2Filter\", foreignNamespace: \"Melville.JBig2\")",
+      "dotnet": "passed",
+      "rules": [
+        "cabin-external-dependencies-2"
+      ],
+      "rulebearing": "passed",
+      "verdict": "agree"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.LowLevelArchitecture.CabinExternalDependencies(localNamespace: \"Melville.Pdf.LowLevel.Filters.JpegFilter\", foreignNamespace: \"Melville.JpegLibrary\")",
+      "dotnet": "passed",
+      "rules": [
+        "cabin-external-dependencies"
+      ],
+      "rulebearing": "passed",
+      "verdict": "agree"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.LowLevelArchitecture.CabinExternalDependencies(localNamespace: \"Melville.Pdf.LowLevel.Filters.JpxDecodeFilters\", foreignNamespace: \"CoreJ2K\")",
+      "dotnet": "passed",
+      "rules": [
+        "cabin-external-dependencies-3"
+      ],
+      "rulebearing": "passed",
+      "verdict": "agree"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.LowLevelArchitecture.ReadersShouldNotReferenceWriters",
+      "dotnet": "passed",
+      "rules": [
+        "readers-should-not-reference-writers"
+      ],
+      "rulebearing": "passed",
+      "verdict": "agree"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.LowLevelArchitecture.WritersShouldNotReferenceReaders",
+      "dotnet": "passed",
+      "rules": [
+        "writers-should-not-reference-readers"
+      ],
+      "rulebearing": "passed",
+      "verdict": "agree"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.ModelArchitecture.CabinExternalDependencies(localNamespace: \"Melville.Pdf.Model.Renderers\", foreignNamespace: \"Melville.Pdf.Model.DocumentRenderers\")",
+      "dotnet": "passed",
+      "rules": [
+        "cabin-external-dependencies-6"
+      ],
+      "rulebearing": "passed",
+      "verdict": "agree"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.ModelArchitecture.CabinExternalDependencies(localNamespace: \"Melville.Pdf.Model.Renderers.Colors\", foreignNamespace: \"Melville.Icc\")",
+      "dotnet": "passed",
+      "rules": [
+        "cabin-external-dependencies-5"
+      ],
+      "rulebearing": "passed",
+      "verdict": "agree"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.ModelArchitecture.CabinFontsUsage",
+      "dotnet": "passed",
+      "rules": [
+        "cabin-fonts-usage"
+      ],
+      "rulebearing": "passed",
+      "verdict": "agree"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.ModelArchitecture.Exclusives(reference: \"Melville.Pdf.Model.Creators\", definition: \"Melville.Pdf.Model.Documents\")",
+      "dotnet": "passed",
+      "rules": [
+        "exclusives"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `reference` is a parameter of the test whose values do not come from literal rows ([MemberData], [TestCaseSource] or computed), which the importer does not evaluate"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.ModelArchitecture.Exclusives(reference: \"Melville.Pdf.Model.Creators\", definition: \"Melville.Pdf.Model.FontMappings\")",
+      "dotnet": "passed",
+      "rules": [
+        "exclusives"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `reference` is a parameter of the test whose values do not come from literal rows ([MemberData], [TestCaseSource] or computed), which the importer does not evaluate"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.ModelArchitecture.Exclusives(reference: \"Melville.Pdf.Model.Creators\", definition: \"Melville.Pdf.Model.OptionalContent\")",
+      "dotnet": "passed",
+      "rules": [
+        "exclusives"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `reference` is a parameter of the test whose values do not come from literal rows ([MemberData], [TestCaseSource] or computed), which the importer does not evaluate"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.ModelArchitecture.Exclusives(reference: \"Melville.Pdf.Model.Documents\", definition: \"Melville.Pdf.Model.Creators\")",
+      "dotnet": "passed",
+      "rules": [
+        "exclusives"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `reference` is a parameter of the test whose values do not come from literal rows ([MemberData], [TestCaseSource] or computed), which the importer does not evaluate"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.ModelArchitecture.Exclusives(reference: \"Melville.Pdf.Model.Documents\", definition: \"Melville.Pdf.Model.FontMappings\")",
+      "dotnet": "passed",
+      "rules": [
+        "exclusives"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `reference` is a parameter of the test whose values do not come from literal rows ([MemberData], [TestCaseSource] or computed), which the importer does not evaluate"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.ModelArchitecture.Exclusives(reference: \"Melville.Pdf.Model.Documents\", definition: \"Melville.Pdf.Model.OptionalContent\")",
+      "dotnet": "passed",
+      "rules": [
+        "exclusives"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `reference` is a parameter of the test whose values do not come from literal rows ([MemberData], [TestCaseSource] or computed), which the importer does not evaluate"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.ModelArchitecture.Exclusives(reference: \"Melville.Pdf.Model.FontMappings\", definition: \"Melville.Pdf.Model.Creators\")",
+      "dotnet": "passed",
+      "rules": [
+        "exclusives"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `reference` is a parameter of the test whose values do not come from literal rows ([MemberData], [TestCaseSource] or computed), which the importer does not evaluate"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.ModelArchitecture.Exclusives(reference: \"Melville.Pdf.Model.FontMappings\", definition: \"Melville.Pdf.Model.Documents\")",
+      "dotnet": "passed",
+      "rules": [
+        "exclusives"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `reference` is a parameter of the test whose values do not come from literal rows ([MemberData], [TestCaseSource] or computed), which the importer does not evaluate"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.ModelArchitecture.Exclusives(reference: \"Melville.Pdf.Model.FontMappings\", definition: \"Melville.Pdf.Model.OptionalContent\")",
+      "dotnet": "passed",
+      "rules": [
+        "exclusives"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `reference` is a parameter of the test whose values do not come from literal rows ([MemberData], [TestCaseSource] or computed), which the importer does not evaluate"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.ModelArchitecture.Exclusives(reference: \"Melville.Pdf.Model.OptionalContent\", definition: \"Melville.Pdf.Model.Creators\")",
+      "dotnet": "passed",
+      "rules": [
+        "exclusives"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `reference` is a parameter of the test whose values do not come from literal rows ([MemberData], [TestCaseSource] or computed), which the importer does not evaluate"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.ModelArchitecture.Exclusives(reference: \"Melville.Pdf.Model.OptionalContent\", definition: \"Melville.Pdf.Model.Documents\")",
+      "dotnet": "passed",
+      "rules": [
+        "exclusives"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `reference` is a parameter of the test whose values do not come from literal rows ([MemberData], [TestCaseSource] or computed), which the importer does not evaluate"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.ModelArchitecture.Exclusives(reference: \"Melville.Pdf.Model.OptionalContent\", definition: \"Melville.Pdf.Model.FontMappings\")",
+      "dotnet": "passed",
+      "rules": [
+        "exclusives"
+      ],
+      "rulebearing": null,
+      "verdict": "not-imported",
+      "reason": "not imported: `reference` is a parameter of the test whose values do not come from literal rows ([MemberData], [TestCaseSource] or computed), which the importer does not evaluate"
+    },
+    {
+      "test": "Melville.Pdf.DataModelTests.Architecture.PostscriptInterpreterArchitecture.CabinExternalDependencies",
+      "dotnet": "passed",
+      "rules": [
+        "cabin-external-dependencies-7"
+      ],
+      "rulebearing": "passed",
+      "verdict": "agree"
+    }
+  ],
+  "agrees": true
+}

@@ -1,0 +1,10 @@
+{
+  "repo": "ardalis/RiverBooks",
+  "sha": "0938f187f3963e225fa25e31bc10a5213932ddf4",
+  "role": "oracle",
+  "tool": "archunitnet",
+  "status": "error",
+  "detail": "dotnet build failed (see build.log)",
+  "incumbent": null,
+  "rulebearing": null
+}
