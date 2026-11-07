@@ -812,3 +812,193 @@ mod options_of_18_7 {
         Ok(())
     }
 }
+
+/// `cruise --baseline [file]` and `--baseline-mode`, as dependency-cruiser 18.7.0's main command
+/// has them: plan 0011 Step 6, ADR-0080. Each case names the upstream test that decides it.
+mod cruise_baseline {
+    use super::*;
+
+    fn lines(output: &Output) -> String {
+        stderr(output)
+    }
+
+    fn held(dir: &Path, file: &str) -> Result<usize, Box<dyn Error>> {
+        Ok(entries(&read_json(&dir.join(file))?).len())
+    }
+
+    /// `test/cli/normalize-cli-options.spec.mjs`: "--baseline with a non-existing file assumes
+    /// no current known violations and tells it's going to create one"; `test/cli/index.spec.mjs`:
+    /// "writes baseline reporter metadata to stderr".
+    #[test]
+    fn a_first_baseline_is_created_with_a_warning_and_the_counts() -> Result<(), Box<dyn Error>> {
+        let dir = tree("cruise-create", CONFIG)?;
+        let out = run(&dir, &["cruise", "src", "--baseline"])?;
+        assert_eq!(out.status.code(), Some(0), "{}", lines(&out));
+        assert!(out.stdout.is_empty(), "the file is the output");
+        let text = lines(&out);
+        assert!(
+            text.starts_with(&format!(
+                "\u{203c} Known violations file '{FILE}' does not exist yet. Will assume an empty current violations set and create a new one instead.\n"
+            )),
+            "{text}"
+        );
+        let count = held(&dir, FILE)?;
+        assert!(count > 0);
+        assert!(
+            text.ends_with(&format!(
+                "\nbaseline  : {count} violations\n\n  new     : {count} (running in 'full' mode => added to the baseline)\n  same    : 0\n  stale   : 0\n\n"
+            )),
+            "{text}"
+        );
+        // The same tree again: nothing new, the same bytes (FR-CORE-07).
+        let first = std::fs::read(dir.join(FILE))?;
+        let again = run(&dir, &["cruise", "src", "--baseline"])?;
+        assert_eq!(again.status.code(), Some(0), "{}", lines(&again));
+        assert!(!lines(&again).contains("does not exist yet"));
+        assert!(
+            lines(&again).contains(&format!(
+                "  new     : 0\n  same    : {count}\n  stale   : 0\n"
+            )),
+            "{}",
+            lines(&again)
+        );
+        assert_eq!(std::fs::read(dir.join(FILE))?, first);
+        Ok(())
+    }
+
+    /// "--baseline with a file name loads known violations and sets baseline output", and
+    /// "--baseline with a cache strategy strips the cache strategy": the file named, the
+    /// baseline reporter over `-T` and `-f`, no cache, and the known violations applied to
+    /// nothing (`ignoreKnown: false`), so `--ignore-known` gives way.
+    #[test]
+    fn the_flag_wins_over_the_output_the_cache_and_ignore_known() -> Result<(), Box<dyn Error>> {
+        let dir = tree("cruise-wins", CONFIG)?;
+        let made = run(&dir, &["cruise", "src", "--baseline", "custom.json"])?;
+        assert_eq!(made.status.code(), Some(0), "{}", lines(&made));
+        let count = held(&dir, "custom.json")?;
+        let out = run(
+            &dir,
+            &[
+                "cruise",
+                "src",
+                "-T",
+                "err",
+                "-f",
+                "elsewhere.txt",
+                "--ignore-known",
+                "custom.json",
+                "--cache",
+                "--cache-strategy",
+                "content",
+                "--baseline",
+                "custom.json",
+            ],
+        )?;
+        assert_eq!(out.status.code(), Some(0), "{}", lines(&out));
+        assert!(!dir.join("elsewhere.txt").exists());
+        assert!(!dir.join("node_modules/.cache/dependency-cruiser").exists());
+        assert!(!dir.join(".graph/cache").exists());
+        assert_eq!(held(&dir, "custom.json")?, count, "nothing softened away");
+        assert!(lines(&out).contains(&format!("  same    : {count}\n")));
+        Ok(())
+    }
+
+    /// `test/report/baseline/baseline.spec.mjs` at 18.7.0, through the command line: shrink-only
+    /// removes a fixed violation and adds no new one; format adds and removes nothing; both exit 0,
+    /// as upstream's main command does (`rulebearing baseline --baseline-mode shrink-only` exits
+    /// with the count instead, ADR-0037).
+    #[test]
+    fn shrink_only_and_format_keep_what_upstream_keeps() -> Result<(), Box<dyn Error>> {
+        let dir = tree("cruise-modes", CONFIG)?;
+        run(&dir, &["cruise", "src", "--baseline"])?;
+        let count = held(&dir, FILE)?;
+        // One violation fixed, one new.
+        std::fs::remove_file(dir.join("src/domain/other.ts"))?;
+        std::fs::write(
+            dir.join("src/domain/third.ts"),
+            "import { w } from \"../web/view\";\nexport const t = w;\n",
+        )?;
+        let before = std::fs::read(dir.join(FILE))?;
+        let format = run(
+            &dir,
+            &["cruise", "src", "--baseline", "--baseline-mode", "format"],
+        )?;
+        assert_eq!(format.status.code(), Some(0), "{}", lines(&format));
+        assert!(
+            lines(&format).contains(&format!(
+                "baseline  : {count} violations (running in 'format' mode so no updates made)\n\n  new     : 1\n  same    : {}\n  stale   : 1\n",
+                count - 1
+            )),
+            "{}",
+            lines(&format)
+        );
+        assert_eq!(held(&dir, FILE)?, count);
+        let formatted: Vec<Value> = entries(&read_json(&dir.join(FILE))?);
+        let original: Vec<Value> = serde_json::from_slice::<Value>(&before).map(|v| entries(&v))?;
+        assert_eq!(formatted.len(), original.len());
+        let shrink = run(
+            &dir,
+            &[
+                "cruise",
+                "src",
+                "--baseline",
+                "--baseline-mode",
+                "shrink-only",
+            ],
+        )?;
+        assert_eq!(shrink.status.code(), Some(0), "{}", lines(&shrink));
+        assert!(
+            lines(&shrink).contains(&format!(
+                "baseline  : {} violations\n\n  new     : 1 (running in 'shrink-only' mode => not added to the baseline)\n  same    : {}\n  stale   : 1 (running in 'shrink-only' mode => removed from the baseline)\n",
+                count - 1,
+                count - 1
+            )),
+            "{}",
+            lines(&shrink)
+        );
+        let kept = read_json(&dir.join(FILE))?;
+        let text = kept.to_string();
+        assert!(!text.contains("src/domain/other.ts") && !text.contains("src/domain/third.ts"));
+        // `--baseline-mode` alone sets the mode of `-T baseline` too, wherever it writes; the
+        // known violations are then the ones `--ignore-known` reads, as upstream's are.
+        let printed = run(
+            &dir,
+            &[
+                "cruise",
+                "src",
+                "-T",
+                "baseline",
+                "--ignore-known",
+                "--baseline-mode",
+                "full",
+            ],
+        )?;
+        assert!(String::from_utf8_lossy(&printed.stdout).contains("src/domain/third.ts"));
+        assert!(
+            lines(&printed)
+                .contains("  new     : 1 (running in 'full' mode => added to the baseline)\n"),
+            "{}",
+            lines(&printed)
+        );
+        Ok(())
+    }
+
+    /// "--baseline rethrows errors other than a missing file": a file that exists but is not a
+    /// known-violations file is a configuration error naming it, and nothing is written.
+    #[test]
+    fn a_file_that_cannot_be_read_is_an_error_naming_it() -> Result<(), Box<dyn Error>> {
+        let dir = tree("cruise-unreadable", CONFIG)?;
+        std::fs::create_dir_all(dir.join("folder.json"))?;
+        let out = run(&dir, &["cruise", "src", "--baseline", "folder.json"])?;
+        assert_eq!(out.status.code(), Some(3), "{}", lines(&out));
+        assert!(lines(&out).contains("folder.json"), "{}", lines(&out));
+        std::fs::write(dir.join("bad.json"), "{ \"not\": \"a list\" }")?;
+        let bad = run(&dir, &["cruise", "src", "--baseline", "bad.json"])?;
+        assert_eq!(bad.status.code(), Some(3), "{}", lines(&bad));
+        assert_eq!(
+            std::fs::read_to_string(dir.join("bad.json"))?,
+            "{ \"not\": \"a list\" }"
+        );
+        Ok(())
+    }
+}

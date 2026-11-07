@@ -146,14 +146,16 @@ pub fn evaluate(
         .map_err(|e| PlaygroundError::Report(e.to_string()))
 }
 
-/// That `output_type` names a reporter.
+/// That `output_type` names a reporter, under its own name or an alias (`dot-webpage`,
+/// [`rb_report::ALIASES`]).
 ///
 /// # Errors
 /// [`PlaygroundError::Report`] listing the output types there are.
 pub fn check_output_type(output_type: &str) -> Result<(), PlaygroundError> {
+    let listed = rb_report::canonical(output_type);
     if rb_report::OUTPUT_TYPES
         .iter()
-        .any(|(name, _)| *name == output_type)
+        .any(|(name, _)| *name == listed)
     {
         return Ok(());
     }
