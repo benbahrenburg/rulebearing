@@ -1,8 +1,10 @@
 //! `summary`: violations extracted from the annotated graph, counted and ordered, plus the
-//! options and rule set the run used. dependency-cruiser 18.2.0's `src/analyze/summarize`, ported.
+//! options and rule set the run used. dependency-cruiser 18.2.0's `src/analyze/summarize`, ported,
+//! with 18.7.0's `verify-environment.mjs` ([`environment_issues`]).
 //!
 //! - Plan: [Wave 1, Step 7](../../../docs/plans/implemented/0001-wave-1-typescript-parity.md#step-7-liveness-severity-ids-receipts-expires-ratchets-1b)
-//!   (`summary.rs`)
+//!   (`summary.rs`); [plan 0011, Step 14](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#26-steps-for-sub-wave-11f-environment-warnings)
+//!   (`summary.environment.issues`)
 //! - Coverage: [coverage § Result document](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#result-document-cruise-result-schema)
 //! - Decisions: [ADR-0004](../../../docs/adr/0004-graph-document-is-cruise-result-superset.md)
 //!   (additions are additive), [ADR-0015](../../../docs/adr/0015-stable-violation-id.md) (ids)
@@ -18,6 +20,7 @@ use std::collections::HashMap;
 use rayon::prelude::*;
 use rb_config::Rule;
 use rb_config::model::DependencyRules;
+use rb_model::{EnvironmentIssue, Severity, TranspilerFound};
 use serde_json::{Map, Value, json};
 
 use crate::compare::compare_violations;
@@ -481,6 +484,129 @@ pub fn stale_entries_severity(options: &Map<String, Value>) -> Option<&str> {
         .get("baseline")?
         .get("staleEntriesSeverity")?
         .as_str()
+}
+
+/// The line ending upstream's `os.EOL` gives on this platform.
+const EOL: &str = if cfg!(windows) { "\r\n" } else { "\n" };
+
+/// The option's value when it is a string, else upstream's default parser `acorn`.
+fn parser(options: &Map<String, Value>) -> &str {
+    options
+        .get("parser")
+        .and_then(Value::as_str)
+        .unwrap_or("acorn")
+}
+
+/// Whether the transpiler `name` is in the list and available.
+fn available(transpilers: &[TranspilerFound], name: &str) -> bool {
+    transpilers.iter().any(|t| t.name == name && t.available)
+}
+
+/// `name: version` for the transpiler `name`, as upstream's message prints it. Upstream reads the
+/// entry it looks up; when the list has none, the name stands with `-`, what upstream prints for
+/// a transpiler it did not find.
+fn named(transpilers: &[TranspilerFound], name: &str) -> String {
+    transpilers.iter().find(|t| t.name == name).map_or_else(
+        || format!("{name}: -"),
+        |t| format!("{}: {}", t.name, t.version),
+    )
+}
+
+/// `tscIsConsistent`: `tsPreCompilationDeps`, `detectJSDocImports` or the `tsc` parser need
+/// TypeScript's own compiler.
+fn tsc_is_consistent(options: &Map<String, Value>, transpilers: &[TranspilerFound]) -> bool {
+    let needed = js::truthy(options.get("tsPreCompilationDeps"))
+        || js::truthy(options.get("detectJSDocImports"))
+        || parser(options) == "tsc";
+    !needed || available(transpilers, "typescript")
+}
+
+/// `typeScriptIsConsistent`: a `tsConfig` needs a TypeScript compiler, `typescript`, or `swc`
+/// when `swc` is the parser. The two options [`tsc_is_consistent`] covers are left to it, so one
+/// cause gives one issue.
+fn typescript_is_consistent(options: &Map<String, Value>, transpilers: &[TranspilerFound]) -> bool {
+    let needed = js::truthy(options.get("tsConfig"))
+        && !(js::truthy(options.get("tsPreCompilationDeps"))
+            || js::truthy(options.get("detectJSDocImports")));
+    let swc_parser = options.get("parser").and_then(Value::as_str) == Some("swc");
+    !needed
+        || transpilers
+            .iter()
+            .any(|t| (t.name == "typescript" || (t.name == "swc" && swc_parser)) && t.available)
+}
+
+/// `swcIsConsistent`: the `swc` parser needs swc.
+fn swc_is_consistent(options: &Map<String, Value>, transpilers: &[TranspilerFound]) -> bool {
+    parser(options) != "swc" || available(transpilers, "swc")
+}
+
+/// `babelIsConsistent`: a `babelConfig` needs Babel.
+fn babel_is_consistent(options: &Map<String, Value>, transpilers: &[TranspilerFound]) -> bool {
+    !js::truthy(options.get("babelConfig")) || available(transpilers, "babel")
+}
+
+/// One `warn` issue.
+fn issue(name: &str, description: String) -> EnvironmentIssue {
+    EnvironmentIssue {
+        severity: Severity::Warn,
+        name: name.to_owned(),
+        description,
+    }
+}
+
+/// `determineEnvironmentIssues` (dependency-cruiser 18.7.0's
+/// `src/analyze/summarize/verify-environment.mjs`): each option that needs a compiler
+/// `transpilers` does not provide, as a `warn` issue worded as upstream words it, in upstream's
+/// order. Empty when the compilers cover the options, and upstream then writes no `issues` key
+/// ([plan 0011, Step 14](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#26-steps-for-sub-wave-11f-environment-warnings),
+/// [ADR-0080](../../../docs/adr/0080-gate-1-moves-to-dependency-cruiser-18-7-0.md)).
+pub fn environment_issues(
+    options: &Map<String, Value>,
+    transpilers: &[TranspilerFound],
+) -> Vec<EnvironmentIssue> {
+    let mut issues = Vec::new();
+    if !tsc_is_consistent(options, transpilers) {
+        let ts = named(transpilers, "typescript");
+        issues.push(issue(
+            "missing-tsc-transpiler",
+            format!(
+                "dependency-cruiser detected a TypeScript environment,{EOL}    but not a compatible TypeScript compiler ({ts}). This means{EOL}    it's likely to have missed TypeScript sources and dependencies.{EOL}{EOL}    Install typescript to get better results (e.g. npm i -D typescript@^6).{EOL}{EOL}    => Support for typescript@>=7 will follow when its API is published and stable.{EOL}"
+            ),
+        ));
+    }
+    if !typescript_is_consistent(options, transpilers) {
+        let found = transpilers
+            .iter()
+            .filter(|t| t.name == "typescript" || t.name == "swc")
+            .map(|t| format!("{}: {}", t.name, t.version))
+            .collect::<Vec<_>>()
+            .join(", ");
+        issues.push(issue(
+            "missing-typescript-transpiler",
+            format!(
+                "dependency-cruiser detected an environment that needs a TypeScript compiler of some sort,{EOL}    but did not find one of the supported ones ({found}).{EOL}    This means it's likely to have missed TypeScript sources and dependencies.{EOL}{EOL}    Install one of the above for better results.{EOL}{EOL}    => if you choose to use swc don't forget to set the \"parser\" option to \"swc\"{EOL}    => Support for typescript@>=7 will follow when its API is published and stable.{EOL}"
+            ),
+        ));
+    }
+    if !swc_is_consistent(options, transpilers) {
+        let swc = named(transpilers, "swc");
+        issues.push(issue(
+            "missing-swc-transpiler",
+            format!(
+                "dependency-cruiser found swc configured as compiler, but {EOL}    it did not find a compatible version of swc ({swc}).{EOL}    dependency-cruiser might have missed some sources or dependencies.{EOL}{EOL}    Install swc (e.g. npm i -D @swc/core) to get better results.{EOL}"
+            ),
+        ));
+    }
+    if !babel_is_consistent(options, transpilers) {
+        let babel = named(transpilers, "babel");
+        issues.push(issue(
+            "missing-babel-transpiler",
+            format!(
+                "dependency-cruiser detected a babel configuration, but not a{EOL}    compatible babel transpiler ({babel}). If you indeed use babel,{EOL}    dependency-cruiser might have missed some sources or dependencies.{EOL}{EOL}    Install babel (e.g. npm i -D @babel/core@^7) to get better results.{EOL}"
+            ),
+        ));
+    }
+    issues
 }
 
 /// `summarizeOptions`: the shareable options, `includeOnly` flattened to its path, plus `args`.
@@ -1081,5 +1207,235 @@ mod tests {
             json!({ "knownViolations": [{ "from": "a" }], "moduleSystems": [], "reporterOptions": {}, "args": "" })
         );
         assert!(find_rule_by_name(None, "f").is_none());
+    }
+}
+
+/// dependency-cruiser 18.7.0's `test/analyze/summarize.spec.mjs`, "report 'environment' issues",
+/// ported: each case's options and transpilers, and the issue names upstream asserts. Upstream
+/// asserts `some` and, for one case, the count; these assert the whole list.
+#[cfg(test)]
+mod environment_tests {
+    use super::*;
+
+    fn found(name: &str, available: bool, version: &str) -> TranspilerFound {
+        TranspilerFound {
+            name: name.to_owned(),
+            version: version.to_owned(),
+            available,
+            current_version: if available { "1.2.3" } else { "-" }.to_owned(),
+        }
+    }
+
+    fn typescript(available: bool) -> Vec<TranspilerFound> {
+        vec![found("typescript", available, ">=2.0.0 <7.0.0")]
+    }
+
+    fn swc(available: bool) -> Vec<TranspilerFound> {
+        vec![found("swc", available, ">=1.0.0 <2.0.0")]
+    }
+
+    fn babel(available: bool) -> Vec<TranspilerFound> {
+        vec![found("babel", available, ">=7.0.0 <9.0.0")]
+    }
+
+    fn names(options: &Value, transpilers: &[TranspilerFound]) -> Vec<String> {
+        let options = options.as_object().cloned().unwrap_or_default();
+        environment_issues(&options, transpilers)
+            .into_iter()
+            .map(|i| i.name)
+            .collect()
+    }
+
+    #[test]
+    fn the_upstream_cases() {
+        let ts_config = json!({ "fileName": "./tsconfig.json" });
+        let cases: Vec<(&str, Value, Vec<TranspilerFound>, &[&str])> = vec![
+            (
+                "tsconfig, both tsc and swc missing",
+                json!({ "tsConfig": ts_config }),
+                typescript(false),
+                &["missing-typescript-transpiler"],
+            ),
+            (
+                "tsconfig, swc present but not the parser",
+                json!({ "tsConfig": ts_config }),
+                swc(true),
+                &["missing-typescript-transpiler"],
+            ),
+            (
+                "tsconfig, tsc missing, swc present and the parser",
+                json!({ "tsConfig": ts_config, "parser": "swc" }),
+                swc(true),
+                &[],
+            ),
+            (
+                "tsPreCompilationDeps, tsc missing",
+                json!({ "tsPreCompilationDeps": true }),
+                typescript(false),
+                &["missing-tsc-transpiler"],
+            ),
+            (
+                "detectJSDocImports, tsc missing",
+                json!({ "detectJSDocImports": true }),
+                typescript(false),
+                &["missing-tsc-transpiler"],
+            ),
+            (
+                "parser tsc, tsc missing",
+                json!({ "parser": "tsc" }),
+                typescript(false),
+                &["missing-tsc-transpiler"],
+            ),
+            (
+                "parser swc, swc missing",
+                json!({ "parser": "swc" }),
+                swc(false),
+                &["missing-swc-transpiler"],
+            ),
+            (
+                "parser swc, swc present",
+                json!({ "parser": "swc" }),
+                swc(true),
+                &[],
+            ),
+            (
+                "tsconfig, typescript present",
+                json!({ "tsConfig": ts_config }),
+                typescript(true),
+                &[],
+            ),
+            (
+                "tsconfig and detectJSDocImports give one issue",
+                json!({ "tsConfig": ts_config, "detectJSDocImports": true }),
+                typescript(false),
+                &["missing-tsc-transpiler"],
+            ),
+            (
+                "babelConfig, babel missing",
+                json!({ "babelConfig": { "fileName": "./.babelrc" } }),
+                babel(false),
+                &["missing-babel-transpiler"],
+            ),
+            (
+                "babelConfig, babel present",
+                json!({ "babelConfig": { "fileName": "./.babelrc" } }),
+                babel(true),
+                &[],
+            ),
+        ];
+        for (case, options, transpilers, expected) in cases {
+            assert_eq!(names(&options, &transpilers), expected, "{case}");
+        }
+    }
+
+    #[test]
+    fn nothing_needed_is_no_issue_whatever_is_missing() {
+        let none: Vec<TranspilerFound> = Vec::new();
+        assert!(names(&json!({}), &none).is_empty());
+        assert!(
+            names(
+                &json!({ "parser": "acorn", "tsPreCompilationDeps": false }),
+                &none
+            )
+            .is_empty()
+        );
+        // "specify" is truthy, as in JavaScript.
+        assert_eq!(
+            names(&json!({ "tsPreCompilationDeps": "specify" }), &none),
+            ["missing-tsc-transpiler"]
+        );
+    }
+
+    #[test]
+    fn every_issue_in_upstream_s_order() {
+        let none = vec![
+            found("babel", false, "*"),
+            found("swc", false, "*"),
+            found("typescript", false, "*"),
+        ];
+        assert_eq!(
+            names(
+                &json!({ "parser": "swc", "tsConfig": {}, "babelConfig": {}, "tsPreCompilationDeps": true }),
+                &none
+            ),
+            [
+                "missing-tsc-transpiler",
+                "missing-swc-transpiler",
+                "missing-babel-transpiler"
+            ]
+        );
+        assert_eq!(
+            names(
+                &json!({ "parser": "swc", "tsConfig": {}, "babelConfig": {} }),
+                &none
+            ),
+            [
+                "missing-typescript-transpiler",
+                "missing-swc-transpiler",
+                "missing-babel-transpiler"
+            ]
+        );
+    }
+
+    /// The texts are upstream's `verify-environment.mjs` with `os.EOL` as `\n`.
+    #[cfg(not(windows))]
+    #[test]
+    fn the_descriptions_are_upstream_s_words() {
+        let list = vec![
+            found("babel", false, ">=7.0.0 <8.0.0"),
+            found("swc", false, ">=1.0.0 <2.0.0"),
+            found("typescript", false, ">=2.0.0 <7.0.0"),
+        ];
+        let options = json!({ "parser": "swc", "tsConfig": {}, "babelConfig": {} });
+        let issues = environment_issues(options.as_object().unwrap_or(&Map::new()), &list);
+        let text: Vec<(&str, &str, Severity)> = issues
+            .iter()
+            .map(|i| (i.name.as_str(), i.description.as_str(), i.severity))
+            .collect();
+        assert_eq!(
+            text,
+            [
+                (
+                    "missing-typescript-transpiler",
+                    "dependency-cruiser detected an environment that needs a TypeScript compiler of some sort,\n    but did not find one of the supported ones (swc: >=1.0.0 <2.0.0, typescript: >=2.0.0 <7.0.0).\n    This means it's likely to have missed TypeScript sources and dependencies.\n\n    Install one of the above for better results.\n\n    => if you choose to use swc don't forget to set the \"parser\" option to \"swc\"\n    => Support for typescript@>=7 will follow when its API is published and stable.\n",
+                    Severity::Warn
+                ),
+                (
+                    "missing-swc-transpiler",
+                    "dependency-cruiser found swc configured as compiler, but \n    it did not find a compatible version of swc (swc: >=1.0.0 <2.0.0).\n    dependency-cruiser might have missed some sources or dependencies.\n\n    Install swc (e.g. npm i -D @swc/core) to get better results.\n",
+                    Severity::Warn
+                ),
+                (
+                    "missing-babel-transpiler",
+                    "dependency-cruiser detected a babel configuration, but not a\n    compatible babel transpiler (babel: >=7.0.0 <8.0.0). If you indeed use babel,\n    dependency-cruiser might have missed some sources or dependencies.\n\n    Install babel (e.g. npm i -D @babel/core@^7) to get better results.\n",
+                    Severity::Warn
+                ),
+            ]
+        );
+        let tsc = environment_issues(
+            json!({ "parser": "tsc" })
+                .as_object()
+                .unwrap_or(&Map::new()),
+            &list,
+        );
+        assert_eq!(
+            tsc.iter()
+                .map(|i| i.description.as_str())
+                .collect::<Vec<_>>(),
+            [
+                "dependency-cruiser detected a TypeScript environment,\n    but not a compatible TypeScript compiler (typescript: >=2.0.0 <7.0.0). This means\n    it's likely to have missed TypeScript sources and dependencies.\n\n    Install typescript to get better results (e.g. npm i -D typescript@^6).\n\n    => Support for typescript@>=7 will follow when its API is published and stable.\n"
+            ]
+        );
+    }
+
+    #[test]
+    fn a_transpiler_missing_from_the_list_is_named_with_a_dash() {
+        let issues = environment_issues(
+            json!({ "babelConfig": {} })
+                .as_object()
+                .unwrap_or(&Map::new()),
+            &[],
+        );
+        assert!(issues[0].description.contains("(babel: -)"));
     }
 }
