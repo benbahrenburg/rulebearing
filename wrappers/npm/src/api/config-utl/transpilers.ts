@@ -1,13 +1,17 @@
 // The caller's own TypeScript and Babel, found as dependency-cruiser finds them (its
 // src/utl/try-import.mjs): resolved from this package, refused outside the range dependency-cruiser
-// 18.2.0 supports, `undefined` when absent.
+// 18.7.0 supports, `undefined` when absent. They read `tsConfig` and `babelConfig` files only: the
+// compiler warnings in `summary.environment` come from the command line's code through `cruise()`
+// (ADR-0082).
 //
-// Decision: docs/adr/0062-the-node-binding-reads-typescript-and-babel-configs-with-the-callers-packages.md.
-// Plan: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 22.
+// Decisions: docs/adr/0062-the-node-binding-reads-typescript-and-babel-configs-with-the-callers-packages.md,
+// docs/adr/0082-summary-environment-is-written-when-it-has-an-issue.md.
+// Plans: docs/plans/implemented/0003-wave-3-operations-surface-inner-loop.md, Step 22;
+// docs/plans/pending/0011-dependency-cruiser-18-7.md, Step 14.
 
 import { createRequire } from 'node:module';
 
-/** The ranges dependency-cruiser 18.2.0 supports (its src/meta.cjs), as [lowest major, first major past]. */
+/** The ranges dependency-cruiser 18.7.0 supports (its src/meta.cjs, unchanged since 18.2.0), as [lowest major, first major past]. */
 export const SUPPORTED: Readonly<Record<'typescript' | '@babel/core', readonly [number, number]>> =
   {
     typescript: [2, 7],
