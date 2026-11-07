@@ -565,6 +565,27 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
+    /// dependency-cruiser 18.7.0's `options-compatible.mjs` added
+    /// `detectImportsInAmbientModules` to what invalidates a cache; here it is part of the
+    /// TypeScript options the extraction hash covers, so each value is its own entry
+    /// ([plan 0011 Step 8](../../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#23-steps-for-sub-wave-11c-the-command-line)).
+    #[test]
+    fn detecting_imports_in_ambient_modules_changes_the_extraction_hash() {
+        let dir = scratch("ambient");
+        let hash = |value: Option<bool>| {
+            let mut config = Config::default();
+            config
+                .languages
+                .typescript
+                .detect_imports_in_ambient_modules = value;
+            extraction_hash(&config, &dir, &dir, &[])
+        };
+        assert_ne!(hash(Some(true)), hash(None));
+        assert_ne!(hash(Some(true)), hash(Some(false)));
+        assert_eq!(hash(Some(true)), hash(Some(true)));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     #[test]
     fn head_resolves_detached_loose_packed_and_worktree_files() {
         let dir = scratch("head");

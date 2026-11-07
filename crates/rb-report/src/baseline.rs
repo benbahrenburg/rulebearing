@@ -22,7 +22,9 @@
 //! `declaredKind` before them (`crate::declared`); `knownViolations` keeps keys it does not
 //! read, and matches an entry by its rule and ends as before.
 
-use rb_rules::compare::{compare_violations, compare_violations_ex_severities};
+use rb_rules::compare::{
+    compare_violations, compare_violations_ex_severities, diff_violation_arrays,
+};
 use rb_rules::known::unmatched_as_written;
 use serde_json::Value;
 
@@ -172,6 +174,151 @@ pub fn render(result: &Value, lifecycle: &Lifecycle) -> Rendered {
     Rendered {
         output,
         exit_code: 0,
+    }
+}
+
+/// The lines upstream's 18.7.0 `baseline` reporter returns as `meta` and its command line prints
+/// on stderr after writing the file: how many violations the file now holds, and how many are
+/// new, the same and stale against `summary.optionsUsed.knownViolations`, by
+/// `diffViolationArrays`, with what the mode did to each
+/// ([plan 0011 Step 6](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#23-steps-for-sub-wave-11c-the-command-line)).
+/// The count the file holds is the length of [`render`]'s output, so the two always agree.
+pub fn meta(result: &Value) -> String {
+    fn list(value: Option<&Value>) -> &[Value] {
+        value
+            .and_then(Value::as_array)
+            .map_or(&[][..], Vec::as_slice)
+    }
+    let summary = result.get("summary").unwrap_or(&Value::Null);
+    let options = summary.get("optionsUsed").unwrap_or(&Value::Null);
+    let known = list(options.get("knownViolations"));
+    let current = list(summary.get("violations"));
+    let mode = options
+        .get("baseline")
+        .and_then(|b| b.get("mode"))
+        .and_then(Value::as_str)
+        .unwrap_or("full");
+    let diff = diff_violation_arrays(known, current);
+    let (emitted, total, added, removed) = match mode {
+        "shrink-only" => (
+            partition(known, current).0.len(),
+            "",
+            " (running in 'shrink-only' mode => not added to the baseline)",
+            " (running in 'shrink-only' mode => removed from the baseline)",
+        ),
+        "format" => (
+            known.len(),
+            " (running in 'format' mode so no updates made)",
+            "",
+            "",
+        ),
+        _ => (
+            current.len(),
+            "",
+            " (running in 'full' mode => added to the baseline)",
+            " (running in 'full' mode => removed from the baseline)",
+        ),
+    };
+    let with = |count: usize, addition: &str| {
+        if count > 0 {
+            format!("{count}{addition}")
+        } else {
+            count.to_string()
+        }
+    };
+    format!(
+        "\nbaseline  : {emitted} violations{total}\n\n  new     : {}\n  same    : {}\n  stale   : {}\n",
+        with(diff.new.len(), added),
+        diff.same.len(),
+        with(diff.old.len(), removed)
+    )
+}
+
+#[cfg(test)]
+mod meta_tests {
+    use super::*;
+    use serde_json::json;
+
+    /// Six violations, as upstream's `dc-result-with-violations.json` mock has.
+    fn six() -> Vec<Value> {
+        (0..6)
+            .map(|i| {
+                json!({ "type": "dependency", "from": format!("src/{i}.js"), "to": "src/z.js",
+                        "rule": { "name": "no-z", "severity": "error" } })
+            })
+            .collect()
+    }
+
+    fn result(known: &[Value], mode: Option<&str>) -> Value {
+        let mut options = json!({ "knownViolations": known });
+        if let Some(mode) = mode {
+            options["baseline"] = json!({ "mode": mode });
+        }
+        json!({ "summary": { "violations": six(), "optionsUsed": options } })
+    }
+
+    // Each case is one of test/report/baseline/baseline.spec.mjs at 18.7.0.
+    #[test]
+    fn the_lines_are_upstreams_in_every_mode() {
+        let five = &six()[..5];
+        let mut with_stale = six();
+        let mut stale = six()[0].clone();
+        stale["from"] = json!("stale");
+        stale["to"] = json!("stale");
+        with_stale.push(stale);
+        let table = [
+            (
+                five,
+                None,
+                "\nbaseline  : 6 violations\n\n  new     : 1 (running in 'full' mode => added to the baseline)\n  same    : 5\n  stale   : 0\n",
+            ),
+            (
+                five,
+                Some("shrink-only"),
+                "\nbaseline  : 5 violations\n\n  new     : 1 (running in 'shrink-only' mode => not added to the baseline)\n  same    : 5\n  stale   : 0\n",
+            ),
+            (
+                five,
+                Some("format"),
+                "\nbaseline  : 5 violations (running in 'format' mode so no updates made)\n\n  new     : 1\n  same    : 5\n  stale   : 0\n",
+            ),
+            (
+                &six()[..],
+                None,
+                "\nbaseline  : 6 violations\n\n  new     : 0\n  same    : 6\n  stale   : 0\n",
+            ),
+            (
+                &with_stale[..],
+                None,
+                "\nbaseline  : 6 violations\n\n  new     : 0\n  same    : 6\n  stale   : 1 (running in 'full' mode => removed from the baseline)\n",
+            ),
+            (
+                &with_stale[..],
+                Some("shrink-only"),
+                "\nbaseline  : 6 violations\n\n  new     : 0\n  same    : 6\n  stale   : 1 (running in 'shrink-only' mode => removed from the baseline)\n",
+            ),
+        ];
+        for (known, mode, expected) in table {
+            let result = result(known, mode);
+            assert_eq!(meta(&result), expected, "{mode:?}");
+            let held: Vec<Value> =
+                serde_json::from_str(&render(&result, &Lifecycle::default()).output)
+                    .unwrap_or_default();
+            assert!(expected.contains(&format!("baseline  : {} violations", held.len())));
+        }
+    }
+
+    #[test]
+    fn a_result_without_known_violations_has_everything_new() {
+        let result = json!({ "summary": { "violations": six() } });
+        assert_eq!(
+            meta(&result),
+            "\nbaseline  : 6 violations\n\n  new     : 6 (running in 'full' mode => added to the baseline)\n  same    : 0\n  stale   : 0\n"
+        );
+        assert_eq!(
+            meta(&json!({})),
+            "\nbaseline  : 0 violations\n\n  new     : 0\n  same    : 0\n  stale   : 0\n"
+        );
     }
 }
 

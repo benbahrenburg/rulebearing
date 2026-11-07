@@ -34,7 +34,8 @@ Options:
   -T, --output-type <TYPE>
           Output type: err, err-long, err-html, json, text, csv, teamcity, azure-devops,
           github-annotations, agent, baseline, sarif, junit, trx, dot, ddot, archi, cdot, flat,
-          fdot, x-dot-webpage, mermaid, d2, metrics, html, markdown, anon, plantuml, null
+          fdot, dot-webpage (or x-dot-webpage), mermaid, d2, metrics, html, markdown, anon,
+          plantuml, null
 
       --from <NODES>
           plantuml: what the diagram's nodes are (slices, types, namespaces or folders); wins over
@@ -42,11 +43,11 @@ Options:
           
           [possible values: slices, types, namespaces, folders]
 
-  -f, --output-to <FILE>
-          File to write output to; - for stdout
-
   -m, --metrics
           Calculate stability metrics (instability, folders)
+
+  -f, --output-to <FILE>
+          File to write output to; - for stdout
 
   -I, --include-only <REGEX>
           Only include modules matching the regex
@@ -60,17 +61,55 @@ Options:
   -R, --reaches <REGEX>
           Only include modules matching the regex and every module that reaches them
 
+  -A, --affected [<REVISION>]
+          Only report the modules changed since REVISION (default main), committed or not, and every
+          module that reaches them, as dependency-cruiser does; with a rulebearing.* configuration,
+          also every violation on their edges that leave them. .NET source files map to their types'
+          modules
+
+      --affected-depth <NUMBER>
+          With --affected or options.affected: how many steps of dependents to include; 0 (the
+          default) for all
+
   -H, --highlight <REGEX>
           Mark modules matching the regex as highlighted
 
   -x, --exclude <REGEX>
           Exclude all modules matching the regex
 
+  -X, --do-not-follow <REGEX>
+          Include modules matching the regex but do not follow their dependencies
+
   -S, --collapse <REGEX-OR-DEPTH>
           Collapse modules to a folder depth (a single digit) or to the first match of a regex
 
-  -X, --do-not-follow <REGEX>
-          Include modules matching the regex but do not follow their dependencies
+      --ts-config [<FILE>]
+          The tsconfig to resolve paths and baseUrl from
+
+      --webpack-config [<FILE>]
+          Resolve as the webpack configuration FILE does (default webpack.config.js), evaluated in
+          the sandbox
+
+      --webpack-config-json <FILE>
+          A webpack configuration, or its `resolve` block, already evaluated to JSON; wins over
+          --webpack-config and webpackConfig
+
+      --ts-pre-compilation-deps [<VALUE>]
+          Keep TypeScript edges that vanish in compilation: true, false or specify
+
+      --baseline [<FILE>]
+          Create or update a known-violations baseline: write the baseline reporter's output to FILE
+          with the file's entries as the known violations, and print what changed on stderr. Implies
+          --no-ignore-known and --no-cache; wins over --output-type and --output-to (default:
+          .dependency-cruiser-known-violations.json)
+
+      --baseline-mode <MODE>
+          What --baseline and the baseline reporter write; wins over options.baseline.mode
+
+          Possible values:
+          - full:        Replace everything: the current violations (the default)
+          - shrink-only: Remove fixed violations, but add no new ones
+          - format:      Rewrite the known violations, adding and removing nothing
 
       --ignore-known [<FILE>]
           Ignore the known violations saved in FILE, in place of options.knownViolations (default:
@@ -105,41 +144,8 @@ Options:
           - metadata: git status and diff against the recorded commit, and file size and time
           - content:  Every input hashed
 
-      --ts-pre-compilation-deps [<VALUE>]
-          Keep TypeScript edges that vanish in compilation: true, false or specify
-
-      --ts-config [<FILE>]
-          The tsconfig to resolve paths and baseUrl from
-
       --preserve-symlinks
           Keep symlinked paths rather than their targets
-
-      --webpack-config [<FILE>]
-          Resolve as the webpack configuration FILE does (default webpack.config.js), evaluated in
-          the sandbox
-
-      --webpack-config-json <FILE>
-          A webpack configuration, or its `resolve` block, already evaluated to JSON; wins over
-          --webpack-config and webpackConfig
-
-      --sidecar <RUNTIME>
-          Extract CoffeeScript and LiveScript files (.coffee, .litcoffee, .coffee.md, .ls, .cjsx,
-          .csx) by running the repository's own dependency-cruiser with Node; their edges are marked
-          sidecar: true. Without it such a file stops the run (exit 2)
-
-          Possible values:
-          - node: The repository's dependency-cruiser, run by the node on the path (or
-            `$RULEBEARING_NODE`)
-
-      --mode <MODE>
-          How .NET is read: compiled (the default) from the built assemblies and PDBs, or source
-          from the .cs files without a build, every edge marked approximate; wins over
-          languages.dotnet.mode
-
-          Possible values:
-          - compiled: From the built assemblies and their portable PDBs: the gate
-          - source:   From the .cs files, without a build: namespace-level, every edge approximate,
-            never the gate
 
   -p, --progress [<TYPE>]
           Show progress on stderr
@@ -175,6 +181,25 @@ Options:
           - django:             Django's models, views, URLs and migrations: `rulebearing:django`
           - fastapi:            FastAPI's routers, services and repositories: `rulebearing:fastapi`
           - vertical-slices:    Features independent of each other: `rulebearing:vertical-slices`
+
+      --sidecar <RUNTIME>
+          Extract CoffeeScript and LiveScript files (.coffee, .litcoffee, .coffee.md, .ls, .cjsx,
+          .csx) by running the repository's own dependency-cruiser with Node; their edges are marked
+          sidecar: true. Without it such a file stops the run (exit 2)
+
+          Possible values:
+          - node: The repository's dependency-cruiser, run by the node on the path (or
+            `$RULEBEARING_NODE`)
+
+      --mode <MODE>
+          How .NET is read: compiled (the default) from the built assemblies and PDBs, or source
+          from the .cs files without a build, every edge marked approximate; wins over
+          languages.dotnet.mode
+
+          Possible values:
+          - compiled: From the built assemblies and their portable PDBs: the gate
+          - source:   From the .cs files, without a build: namespace-level, every edge approximate,
+            never the gate
 
       --no-liveness
           Do not check whether rules match anything; the same as --liveness off
@@ -214,16 +239,6 @@ Options:
       --from-hook
           Answer as a Claude Code Stop hook: the agent report as the reason to keep going when there
           are errors, exit 0 always
-
-  -A, --affected [<REVISION>]
-          Only report the modules changed since REVISION (default main), committed or not, and every
-          module that reaches them, as dependency-cruiser does; with a rulebearing.* configuration,
-          also every violation on their edges that leave them. .NET source files map to their types'
-          modules
-
-      --affected-depth <NUMBER>
-          With --affected or options.affected: how many steps of dependents to include; 0 (the
-          default) for all
 
       --exit-code-mode <MODE>
           How the error count becomes the exit code: default (the count) or strict (10 + the count,

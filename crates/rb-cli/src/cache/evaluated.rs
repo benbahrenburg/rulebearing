@@ -471,6 +471,38 @@ mod tests {
         Ok(())
     }
 
+    /// dependency-cruiser 18.7.0's `options-compatible.mjs` added `ignoreKnown` to what
+    /// invalidates a cache; here every option is part of the evaluated layer's key, and so is
+    /// each known violation, which `cruise --baseline` reads from its file
+    /// ([plan 0011 Step 8](../../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#23-steps-for-sub-wave-11c-the-command-line)).
+    #[test]
+    fn ignore_known_and_the_known_violations_are_part_of_the_key() {
+        let dir = scratch("ignore-known-key");
+        let mut stdin: &[u8] = &[];
+        let ctx = Context {
+            cwd: dir.clone(),
+            stdin: &mut stdin,
+            today: chrono::NaiveDate::default(),
+            timestamp: String::new(),
+            color_terminal: false,
+            warm: None,
+            usage: crate::usage::Recorder::default(),
+        };
+        let options = RunOptions::default();
+        let key = |ignore_known: Option<bool>, known: usize| {
+            let mut config = Config::default();
+            config.options.ignore_known = ignore_known;
+            config.known_violations = (0..known)
+                .map(|_| rb_config::model::KnownViolation::default())
+                .collect();
+            partial_key(&ctx, &config, &options, "Strict")
+        };
+        assert_ne!(key(Some(false), 0), key(None, 0));
+        assert_ne!(key(Some(false), 0), key(Some(true), 0));
+        assert_ne!(key(Some(false), 1), key(Some(false), 0));
+        assert_eq!(key(Some(false), 1), key(Some(false), 1));
+    }
+
     fn verdict() -> Verdict {
         Verdict {
             document: GraphDocument::default(),

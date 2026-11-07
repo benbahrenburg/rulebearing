@@ -1001,27 +1001,64 @@ pub fn run(ctx: &mut Context<'_>, args: &InitArgs) -> Outcome {
     Outcome::printed(report)
 }
 
-/// The run scripts `--init x-scripts` adds to `package.json`: dependency-cruiser's
-/// `compileRunScripts`, with `rulebearing cruise` for `depcruise`, over the roots found. Its
-/// `depcruise:graph`, `depcruise:graph:dev`, `depcruise:graph:archi` and `depcruise:html` scripts
-/// pipe the `dot`, `archi` and `err-html` reporters through `depcruise-wrap-stream-in-html`,
-/// which this build does not have, so they are not written rather than written broken.
+/// The run scripts `--init x-scripts` adds to `package.json`: dependency-cruiser 18.7.0's
+/// `compileRunScripts`, in its order, with `rulebearing cruise` for `dependency-cruiser` and
+/// `rulebearing wrap-html` for `depcruise-wrap-stream-in-html`, over the roots found (which hold
+/// upstream's source and test locations both). 18.3.0's `dot-webpage` draws the two graph
+/// scripts itself; `rulebearing:graph:archi` still pipes `archi` through GraphViz' `dot`, and
+/// `rulebearing:graph:dev` through the `browser` program, as upstream's do
+/// ([plan 0011 Step 8](../../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#23-steps-for-sub-wave-11c-the-command-line)).
 pub fn run_scripts(roots: &[String]) -> Vec<(String, String)> {
+    let pattern = roots_pattern(roots);
     let roots = roots.join(" ");
-    vec![
+    [
+        ("rulebearing", format!("rulebearing cruise {roots}")),
         (
-            "rulebearing".to_owned(),
-            format!("rulebearing cruise {roots}"),
+            "rulebearing:graph",
+            format!(
+                "rulebearing cruise {roots} --include-only '{pattern}' --output-type dot-webpage > dependency-graph.html"
+            ),
         ),
         (
-            "rulebearing:text".to_owned(),
+            "rulebearing:graph:dev",
+            format!(
+                "rulebearing cruise {roots} --include-only '{pattern}' --prefix vscode://file/$(pwd)/ --output-type dot-webpage | browser"
+            ),
+        ),
+        (
+            "rulebearing:graph:archi",
+            format!(
+                "rulebearing cruise {roots} --include-only '{pattern}' --output-type archi | dot -T svg | rulebearing wrap-html > high-level-dependency-graph.html"
+            ),
+        ),
+        (
+            "rulebearing:html",
+            format!(
+                "rulebearing cruise {roots} --progress --output-type err-html --output-to dependency-violation-report.html"
+            ),
+        ),
+        (
+            "rulebearing:text",
             format!("rulebearing cruise {roots} --progress --output-type text"),
         ),
         (
-            "rulebearing:focus".to_owned(),
+            "rulebearing:focus",
             format!("rulebearing cruise {roots} --progress --output-type text --focus"),
         ),
     ]
+    .into_iter()
+    .map(|(name, command)| (name.to_owned(), command))
+    .collect()
+}
+
+/// dependency-cruiser's `folderNameArrayToRE`: `^(` the folder names, each `\\` and `.` escaped,
+/// joined by `|`, `)`.
+pub fn roots_pattern(roots: &[String]) -> String {
+    let folders: Vec<String> = roots
+        .iter()
+        .map(|root| root.replace('\\', "\\\\").replace('.', "\\."))
+        .collect();
+    format!("^({})", folders.join("|"))
 }
 
 /// dependency-cruiser's `addRunScriptsToManifest`: each script whose name the manifest's
@@ -1530,7 +1567,17 @@ mod tests {
             serde_json::json!({ "rulebearing": "mine", "build": "tsc" }),
         );
         let added = add_run_scripts(&mut manifest, &scripts);
-        assert_eq!(added, ["rulebearing:text", "rulebearing:focus"]);
+        assert_eq!(
+            added,
+            [
+                "rulebearing:graph",
+                "rulebearing:graph:dev",
+                "rulebearing:graph:archi",
+                "rulebearing:html",
+                "rulebearing:text",
+                "rulebearing:focus"
+            ]
+        );
         assert_eq!(
             manifest["scripts"]["rulebearing"], "mine",
             "an existing script is kept"
@@ -1539,17 +1586,38 @@ mod tests {
             .as_object()
             .map(|s| s.keys().collect())
             .unwrap_or_default();
-        assert_eq!(
-            order,
-            [
-                "rulebearing",
-                "build",
-                "rulebearing:text",
-                "rulebearing:focus"
-            ]
-        );
+        assert_eq!(order[..3], ["rulebearing", "build", "rulebearing:graph"]);
+        assert_eq!(order.len(), 8);
         let mut bare = serde_json::Map::new();
-        assert_eq!(add_run_scripts(&mut bare, &scripts).len(), 3);
+        assert_eq!(add_run_scripts(&mut bare, &scripts).len(), 7);
+    }
+
+    /// `test/cli/init-config/write-run-scripts-to-manifest.spec.mjs` at 18.7.0: the graph
+    /// scripts draw with `dot-webpage`, and the folders become one anchored pattern.
+    #[test]
+    fn the_graph_scripts_are_upstreams_with_this_build_in_place_of_dependency_cruiser() {
+        let scripts: std::collections::BTreeMap<String, String> =
+            run_scripts(&["src".to_owned(), "lib.d".to_owned()])
+                .into_iter()
+                .collect();
+        assert_eq!(
+            scripts["rulebearing:graph"],
+            "rulebearing cruise src lib.d --include-only '^(src|lib\\.d)' --output-type dot-webpage > dependency-graph.html"
+        );
+        assert_eq!(
+            scripts["rulebearing:graph:dev"],
+            "rulebearing cruise src lib.d --include-only '^(src|lib\\.d)' --prefix vscode://file/$(pwd)/ --output-type dot-webpage | browser"
+        );
+        assert_eq!(
+            scripts["rulebearing:graph:archi"],
+            "rulebearing cruise src lib.d --include-only '^(src|lib\\.d)' --output-type archi | dot -T svg | rulebearing wrap-html > high-level-dependency-graph.html"
+        );
+        assert_eq!(
+            scripts["rulebearing:html"],
+            "rulebearing cruise src lib.d --progress --output-type err-html --output-to dependency-violation-report.html"
+        );
+        assert_eq!(roots_pattern(&["a\\b".to_owned()]), "^(a\\\\b)");
+        assert_eq!(roots_pattern(&[]), "^()");
     }
 
     #[test]

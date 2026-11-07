@@ -86,6 +86,53 @@ pub fn compare_violations_ex_severities(first: &Value, second: &Value) -> Orderi
         .then_with(|| compare_arrays(js::array(first, "via"), js::array(second, "via"), true))
 }
 
+/// What `diffViolationArrays` answers: the violations of the second list no entry of the first
+/// matches (`new`), the entries of the first a violation of the second matches (`same`), and the
+/// entries of the first nothing matches (`old`), each in [`compare_violations_ex_severities`]
+/// order.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ViolationDiff {
+    /// In the second list only.
+    pub new: Vec<Value>,
+    /// In both, as the first list holds them.
+    pub same: Vec<Value>,
+    /// In the first list only.
+    pub old: Vec<Value>,
+}
+
+/// `diffViolationArrays` (dependency-cruiser 18.7.0, `src/graph-utl/compare.mjs`): both lists
+/// sorted by [`compare_violations_ex_severities`] and merged, so a violation that differs only in
+/// its severity is the same violation, and each entry pairs with at most one violation.
+pub fn diff_violation_arrays(first: &[Value], second: &[Value]) -> ViolationDiff {
+    let mut first = first.to_vec();
+    let mut second = second.to_vec();
+    first.sort_by(compare_violations_ex_severities);
+    second.sort_by(compare_violations_ex_severities);
+    let mut diff = ViolationDiff::default();
+    let mut second = second.into_iter().peekable();
+    for entry in first {
+        loop {
+            match second
+                .peek()
+                .map(|next| compare_violations_ex_severities(&entry, next))
+            {
+                Some(Ordering::Greater) => diff.new.extend(second.next()),
+                Some(Ordering::Equal) => {
+                    second.next();
+                    diff.same.push(entry);
+                    break;
+                }
+                Some(Ordering::Less) | None => {
+                    diff.old.push(entry);
+                    break;
+                }
+            }
+        }
+    }
+    diff.new.extend(second);
+    diff
+}
+
 /// `compareRules`: severity, then name.
 pub fn compare_rules(left: &Value, right: &Value) -> Ordering {
     compare_severities(js::str_of(left, "severity"), js::str_of(right, "severity"))
@@ -210,5 +257,69 @@ mod tests {
             compare_modules(&json!({ "source": "a" }), &json!({ "source": "a" })),
             Ordering::Less
         );
+    }
+
+    fn edge(from: &str, to: &str, name: &str, severity: &str) -> Value {
+        json!({ "from": from, "to": to, "rule": { "name": name, "severity": severity } })
+    }
+
+    #[test]
+    fn violation_arrays_diff_by_value_as_upstreams_spec_says() {
+        // test/graph-utl/compare.violations.spec.mjs, "diffs arrays of violations by value".
+        let shared = edge("app.js", "lib.js", "no-cycles", "error");
+        let old = edge("a.js", "b.js", "no-cycles", "warn");
+        let new = edge("c.js", "d.js", "no-cycles", "info");
+        assert_eq!(
+            diff_violation_arrays(
+                &[old.clone(), shared.clone()],
+                &[shared.clone(), new.clone()]
+            ),
+            ViolationDiff {
+                new: vec![new],
+                same: vec![shared],
+                old: vec![old]
+            }
+        );
+        // "diffs arrays with repeated equal violations without inventing new comparison logic".
+        let duplicate = edge("dup.js", "dup-target.js", "reachability", "error");
+        let other = edge("other.js", "other-target.js", "reachability", "warn");
+        assert_eq!(
+            diff_violation_arrays(
+                &[duplicate.clone(), duplicate.clone(), other.clone()],
+                std::slice::from_ref(&duplicate)
+            ),
+            ViolationDiff {
+                new: vec![],
+                same: vec![duplicate.clone()],
+                old: vec![duplicate, other]
+            }
+        );
+        // A severity is not part of a violation's identity.
+        let warn = edge("x.js", "y.js", "r", "warn");
+        let diff = diff_violation_arrays(&[edge("x.js", "y.js", "r", "error")], &[warn]);
+        assert_eq!((diff.new.len(), diff.same.len(), diff.old.len()), (0, 1, 0));
+        assert_eq!(diff_violation_arrays(&[], &[]), ViolationDiff::default());
+    }
+
+    proptest::proptest! {
+        #[test]
+        fn every_violation_is_counted_once(
+            first in proptest::collection::vec(("[a-c]", "[a-c]", "[a-b]"), 0..8),
+            second in proptest::collection::vec(("[a-c]", "[a-c]", "[a-b]"), 0..8),
+        ) {
+            let list = |items: &[(String, String, String)]| -> Vec<Value> {
+                items.iter().map(|(f, t, n)| edge(f, t, n, "error")).collect()
+            };
+            let (first, second) = (list(&first), list(&second));
+            let diff = diff_violation_arrays(&first, &second);
+            proptest::prop_assert_eq!(diff.same.len() + diff.old.len(), first.len());
+            proptest::prop_assert_eq!(diff.same.len() + diff.new.len(), second.len());
+            let itself = diff_violation_arrays(&first, &first);
+            proptest::prop_assert_eq!(itself.same.len(), first.len());
+            proptest::prop_assert!(itself.new.is_empty() && itself.old.is_empty());
+            let swapped = diff_violation_arrays(&second, &first);
+            proptest::prop_assert_eq!(swapped.new.len(), diff.old.len());
+            proptest::prop_assert_eq!(swapped.old.len(), diff.new.len());
+        }
     }
 }
