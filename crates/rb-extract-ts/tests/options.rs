@@ -1110,6 +1110,45 @@ fn vue_and_svelte_scripts_are_extracted_where_they_stand() -> Result<(), Box<dyn
     Ok(())
 }
 
+/// dependency-cruiser 18.7.0's `svelte-wrap.spec.mjs` "transpiles svelte components that use
+/// top level await", with its `svelte-async.svelte` mock as `src/Page.svelte`: the static and the
+/// awaited dynamic import are both found, with either parser. Upstream compiles again with
+/// `experimental.async` when svelte refuses the `await`; oxc reads a component's script as a
+/// module, where a top-level `await` is valid, so there is nothing to retry.
+#[test]
+fn a_svelte_component_with_top_level_await_is_read() -> Result<(), Box<dyn std::error::Error>> {
+    let expected = vec![
+        (
+            "./page.css".to_owned(),
+            "src/page.css".to_owned(),
+            vec!["local".to_owned(), "import".to_owned()],
+        ),
+        (
+            "./renderer.svelte".to_owned(),
+            "src/renderer.svelte".to_owned(),
+            vec!["local".to_owned(), "dynamic-import".to_owned()],
+        ),
+    ];
+    for options in ["{}", r#"{"tsPreCompilationDeps": true}"#] {
+        let extraction = run("sfc-async", options, &["src"])?;
+        assert_eq!(edges(&extraction, "src/Page.svelte"), expected, "{options}");
+    }
+    Ok(())
+}
+
+/// 18.7.0's "rethrows svelte compiler errors" is not ported. svelte's compiler throws on a script
+/// that does not parse, and so did 18.2.0's `svelte-wrap.mjs`; oxc recovers from syntax errors,
+/// as `walk_source` says, so the component is a module with what the parser kept and the run
+/// goes on. This records that difference until a decision changes it.
+#[test]
+fn a_svelte_component_that_does_not_parse_is_read_as_far_as_oxc_recovers()
+-> Result<(), Box<dyn std::error::Error>> {
+    let extraction = run("sfc-async", "{}", &["broken"])?;
+    assert!(module(&extraction, "broken/Broken.svelte").is_some());
+    assert!(edges(&extraction, "broken/Broken.svelte").is_empty());
+    Ok(())
+}
+
 #[test]
 fn a_webpack_resolve_block_reaches_the_resolver() -> Result<(), Box<dyn std::error::Error>> {
     let cwd = fixture("webpack-resolve");
