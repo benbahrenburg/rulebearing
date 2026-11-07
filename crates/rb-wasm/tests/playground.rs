@@ -182,6 +182,14 @@ fn what_cannot_be_answered_is_named() -> Result {
             && unknown.contains("err-long"),
         "{unknown}"
     );
+    // `dot-webpage` is a reporter, as `x-dot-webpage` is: refused for want of GraphViz, which a
+    // browser does not have, with the same words, never as an unknown name.
+    let webpage = refused(evaluate(&config, &graph, "dot-webpage", &now()));
+    assert_eq!(
+        webpage,
+        refused(evaluate(&config, &graph, "x-dot-webpage", &now()))
+    );
+    assert!(webpage.contains("GraphViz dot"), "{webpage}");
     let not_a_graph = refused(evaluate(&config, "{ \"modules\": 3 }", "json", &now()));
     assert!(
         not_a_graph.starts_with("the graph is not a cruise result: "),

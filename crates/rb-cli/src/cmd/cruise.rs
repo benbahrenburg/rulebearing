@@ -116,6 +116,18 @@ pub fn run(ctx: &mut Context<'_>, args: &CruiseArgs) -> Outcome {
     Outcome { code: 0, ..outcome }
 }
 
+/// The command line laid over the configuration: every flag, then `--baseline-mode` and
+/// `--baseline`, which win over the output, cache and known-violation flags. Returns the warning
+/// `--baseline` gives for a file that does not exist yet, or nothing.
+fn flags(
+    config: &mut Config,
+    args: &CruiseArgs,
+    ctx: &Context<'_>,
+) -> Result<String, rb_config::ConfigError> {
+    configure::apply_flags(config, args, ctx)?;
+    Ok(configure::baseline_flag(config, args, ctx)?.unwrap_or_default())
+}
+
 /// `--from` says what a plantuml diagram draws; with any other reporter it would be ignored, so
 /// it is refused.
 fn from_applies(args: &CruiseArgs, output_type: &str) -> Result<(), RunError> {
@@ -144,11 +156,16 @@ fn config_warnings(config: &Config) -> String {
 }
 
 /// Whether the rendered cache layer may serve and store `output_type`'s output. A plugin's
-/// output is never served from, or stored in, it; nor is `x-dot-webpage`'s, which depends on the
-/// GraphViz installed at the time of the run, not on the key (ADR-0053): without `dot` it must
-/// exit 2, never serve an old page.
+/// output is never served from, or stored in, it; nor is `x-dot-webpage`'s (or `dot-webpage`'s),
+/// which depends on the GraphViz installed at the time of the run, not on the key (ADR-0053):
+/// without `dot` it must exit 2, never serve an old page. Nor is `baseline`'s, whose lines on
+/// stderr ([`rb_report::baseline::meta`]) are made from the whole result, which only rendering has.
 fn renders_cached(output_type: &str) -> bool {
-    rb_config::js::plugin::plugin_name(output_type).is_none() && output_type != "x-dot-webpage"
+    rb_config::js::plugin::plugin_name(output_type).is_none()
+        && !matches!(
+            rb_report::canonical(output_type),
+            "x-dot-webpage" | configure::BASELINE_OUTPUT_TYPE
+        )
 }
 
 /// An extraction a caller already made (`guard` keeps one in memory): the merged document and
@@ -234,16 +251,17 @@ fn cruise_with(
     let has_config = config.is_some();
     let liveness = Liveness::of(args.liveness, args.no_liveness, config.as_ref());
     let mut effective = config.take().unwrap_or_default();
-    if let Err(e) = configure::apply_flags(&mut effective, args, ctx) {
-        return failed(&RunError::Config(e), "");
-    }
+    let baseline_warning = match flags(&mut effective, args, ctx) {
+        Ok(warning) => warning,
+        Err(e) => return failed(&RunError::Config(e), ""),
+    };
     let status = run_status(ctx, args, &effective, given.is_none());
     let affected = match affected(ctx, args, &mut effective, &status) {
         Ok(selection) => selection,
         Err(outcome) => return *outcome,
     };
     progress.stage("configuration");
-    let stderr = config_warnings(&effective);
+    let stderr = baseline_warning + &config_warnings(&effective);
     let (output_type, output_to) = outputs(args, &effective);
     if let Err(e) = from_applies(args, &output_type).and_then(|()| plans_apply(args, &output_type))
     {
@@ -360,7 +378,7 @@ fn finish(
                 ctx,
                 effective,
                 &tail,
-                (output, None),
+                (output, None, None),
                 finishing,
                 progress,
                 stderr,
@@ -375,7 +393,7 @@ fn finish(
                     // run's copy is a clone only when the cache stores it. A report not rendered
                     // is not kept: a plain `-T agent` run has the same key.
                     let kept = cache.zip(report_part).filter(|_| rendered.is_some());
-                    let (output, count) = rendered.unwrap_or_default();
+                    let (output, count, meta) = rendered.unwrap_or_default();
                     let (printed, stored) = if kept.is_some() {
                         (output.clone(), Some(output))
                     } else {
@@ -385,7 +403,7 @@ fn finish(
                         ctx,
                         effective,
                         &tail,
-                        (printed, count),
+                        (printed, count, meta),
                         finishing,
                         progress,
                         stderr,
@@ -699,7 +717,7 @@ fn render(
     output_type: &str,
     options: &ReportOptions,
     plans: Option<&Config>,
-) -> Result<(String, Option<u64>), RunError> {
+) -> Result<Rendered, RunError> {
     // `json` as written is the document itself: serialised straight to text, never held as a
     // value first, which on a compiled .NET graph is several times the output's size (plan 0003,
     // 3G, peak memory). The bytes are the value's, key for key (`value::document`).
@@ -707,7 +725,7 @@ fn render(
         let mut output = serde_json::to_string_pretty(&verdict.document)
             .map_err(|e| RunError::Engine(e.into()))?;
         output.push('\n');
-        return Ok((output, None));
+        return Ok((output, None, None));
     }
     let plugin = rb_config::js::plugin::plugin_name(output_type);
     // A reporter that does not read the code layer is not handed one (rb_report::READS_CODE).
@@ -720,9 +738,12 @@ fn render(
     if let Some(name) = plugin {
         let rendered = crate::plugin::render(&ctx.cwd, name, &mut value, options.strict_schema)?;
         crate::value::release(value);
-        return Ok((rendered.output, Some(rendered.exit_code)));
+        return Ok((rendered.output, Some(rendered.exit_code), None));
     }
     let rendered = rb_report::render(output_type, &value, options);
+    // What upstream's `baseline` reporter returns as `meta`, for stderr.
+    let meta = (rb_report::canonical(output_type) == configure::BASELINE_OUTPUT_TYPE)
+        .then(|| rb_report::baseline::meta(&value));
     crate::value::release(value);
     let output = rendered
         .map(|rendered| rendered.output)
@@ -735,12 +756,16 @@ fn render(
         // `--with-plans`: each finding the agent report shows gets `fix --plan`'s refactors.
         Some(config) if output_type == "agent" => {
             crate::cmd::fix_plan::with_plans(&output, &verdict.document, config, ctx.today)
-                .map(|output| (output, None))
+                .map(|output| (output, None, None))
                 .map_err(RunError::Report)
         }
-        _ => Ok((output, None)),
+        _ => Ok((output, None, meta)),
     }
 }
+
+/// A rendered report: the output, a plugin's count when a plugin rendered it, and the lines the
+/// reporter prints on stderr after the output is written.
+type Rendered = (String, Option<u64>, Option<String>);
 
 /// The configuration the `agent` report plans with under `--with-plans`.
 fn plans_for<'a>(args: &CruiseArgs, config: &'a Config) -> Option<&'a Config> {
@@ -831,7 +856,7 @@ fn conclude(
     ctx: &Context<'_>,
     config: &Config,
     tail: &Tail,
-    (output, plugin_count): (String, Option<u64>),
+    (output, plugin_count, meta): Rendered,
     finishing: Finishing<'_>,
     mut progress: Progress,
     mut stderr: String,
@@ -877,6 +902,9 @@ fn conclude(
         };
     }
     stderr.insert_str(0, &progress.finish());
+    if let Some(meta) = meta {
+        let _ = writeln!(stderr, "{meta}");
+    }
     for expired in &tail.expired {
         let _ = writeln!(
             stderr,
@@ -912,10 +940,14 @@ fn conclude(
 }
 
 /// The reporter and where it writes: the flags, else the configuration, else `err` to stdout;
-/// always `agent` to stdout for `--from-hook`.
+/// always `agent` to stdout for `--from-hook`, and `baseline` to the file for `--baseline`,
+/// over `--output-type` and `--output-to` as upstream lays it.
 fn outputs(args: &CruiseArgs, config: &Config) -> (String, String) {
     if args.from_hook {
         return ("agent".to_owned(), "-".to_owned());
+    }
+    if let Some(file) = &args.baseline {
+        return (configure::BASELINE_OUTPUT_TYPE.to_owned(), file.clone());
     }
     (
         args.output_type
