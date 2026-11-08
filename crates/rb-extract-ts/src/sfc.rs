@@ -22,6 +22,11 @@
 //! from compiling a Svelte component and this splitter does not see are the compiler's own
 //! runtime imports (`svelte/internal/...`, which depend on the installed compiler's version) and
 //! `import()` inside template expressions; the coverage tab names the splitter as the approach.
+//!
+//! dependency-cruiser 18.7.0's `svelte-wrap.mjs` compiles a component again with
+//! `experimental.async` when svelte refuses a top-level `await` ([plan 0011, Step 13](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#25-steps-for-sub-wave-11e-extraction)).
+//! [`syntax`] gives every script a module source type, where a top-level `await` parses, so the
+//! splitter needs no second pass; `tests/options/sfc-async` holds upstream's mock.
 
 use oxc_span::SourceType;
 

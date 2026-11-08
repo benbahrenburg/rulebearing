@@ -6,7 +6,8 @@
 //! - Source: [coverage § Extraction and resolution](../../../docs/artifacts/dependency-cruiser-18.2.0-coverage.md#extraction-and-resolution),
 //!   rows npm classification and `combinedDependencies`
 //! - Specification: dependency-cruiser 18.2.0 `src/extract/resolve/{get-manifest,merge-manifests,
-//!   determine-dependency-types,external-module-helpers}.mjs`
+//!   determine-dependency-types,external-module-helpers}.mjs`; 18.7.0's
+//!   `determine-dependency-types.mjs` for the key rule ([plan 0011, Step 11](../../../docs/plans/pending/0011-dependency-cruiser-18-7.md#25-steps-for-sub-wave-11e-extraction))
 //!
 //! Key order matters: dependency-cruiser reports the dependency types in the order the keys appear
 //! in the manifest, so a manifest is kept as an ordered list of `(key, value)` pairs rather than a
@@ -87,8 +88,17 @@ pub fn nearest(files: &Files, folder: &Path) -> Option<Manifest> {
     None
 }
 
+/// Whether a manifest key lists dependencies: `dependencies`, `devDependencies`,
+/// `peerDependencies`, `optionalDependencies`, `bundleDependencies`, `bundledDependencies`, but
+/// not `peerDependenciesMeta`. dependency-cruiser 18.7.0's `dependencyKeyHasModuleName` tests
+/// `endsWith("ependencies")`; 18.2.0 tested `includes`, which let `peerDependenciesMeta` classify a
+/// dependency.
+fn is_dependency_key(key: &str) -> bool {
+    key.ends_with("ependencies")
+}
+
 fn is_interesting(key: &str) -> bool {
-    key.ends_with("ependencies") || key == "workspaces" || key == "imports"
+    is_dependency_key(key) || key == "workspaces" || key == "imports"
 }
 
 fn is_array_key(key: &str) -> bool {
@@ -213,7 +223,7 @@ fn find_in(manifest: &Manifest, name: &str) -> Vec<DependencyType> {
         .0
         .iter()
         .filter(|(key, value)| {
-            key.contains("ependencies") && value.as_object().is_some_and(|o| o.contains_key(name))
+            is_dependency_key(key) && value.as_object().is_some_and(|o| o.contains_key(name))
         })
         .map(|(key, _)| dependency_type_of(key))
         .collect()
@@ -291,6 +301,46 @@ mod tests {
         assert!(is_bundled("x", Some(&m)));
         assert!(!is_bundled("p", Some(&m)));
         assert!(!is_bundled("x", None));
+    }
+
+    /// dependency-cruiser 18.7.0's `determine-dependency-types.spec.mjs`: "does not classify
+    /// peerDependenciesMeta entries as dependencies" and "does classify peerDependencies correctly
+    /// even when peerDependenciesMeta entries are present".
+    #[test]
+    fn peer_dependencies_meta_classifies_nothing() {
+        let meta = manifest(r#"{"peerDependenciesMeta": {"left-pad": {"optional": true}}}"#);
+        assert_eq!(
+            manifest_dependency_types("left-pad", Some(&meta), &[]),
+            [DependencyType::NpmNoPkg]
+        );
+        let both = manifest(
+            r#"{"peerDependencies": {"left-pad": ">=1.2.3"}, "peerDependenciesMeta": {"left-pad": {"optional": true}}}"#,
+        );
+        assert_eq!(
+            manifest_dependency_types("left-pad", Some(&both), &[]),
+            [DependencyType::NpmPeer]
+        );
+    }
+
+    proptest::proptest! {
+        /// Any key: it classifies a listed package only when it ends in `ependencies`, with its
+        /// own type or `npm-no-pkg`, and never hides `dependencies` after it.
+        #[test]
+        fn only_a_key_ending_in_ependencies_classifies(
+            key in "(peer|dev|optional|bundle|bundled|x)?(D|d)?(ependencies)?(Meta|IDoNotWantToTalkabout|s)?",
+        ) {
+            let listed = serde_json::json!({ "m": "1" });
+            let m = Manifest(vec![
+                (key.clone(), listed.clone()),
+                ("dependencies".to_owned(), listed),
+            ]);
+            let mut expected = Vec::new();
+            if key.ends_with("ependencies") {
+                expected.push(dependency_type_of(&key));
+            }
+            expected.push(DependencyType::Npm);
+            proptest::prop_assert_eq!(manifest_dependency_types("m", Some(&m), &[]), expected);
+        }
     }
 
     #[test]
