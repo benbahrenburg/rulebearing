@@ -187,6 +187,89 @@ describe('cruise()', () => {
   });
 });
 
+// Plan 0011 Step 15 ("`rb-node`'s `cruise()` and `format()` equal the CLI on a fixture that uses
+// a baseline with a stale entry"): the known violation is ignored, the entry that no longer
+// occurs is stale, and `staleEntriesSeverity` decides whether it gates (ADR-0080).
+describe('a baseline with a stale entry', () => {
+  const known = [
+    {
+      type: 'dependency',
+      from: 'src/ui/page.ts',
+      to: 'src/db/store.ts',
+      rule: { name: 'ui-not-to-db', severity: 'error' },
+    },
+    {
+      type: 'dependency',
+      from: 'src/ui/gone.ts',
+      to: 'src/db/store.ts',
+      rule: { name: 'ui-not-to-db', severity: 'error' },
+    },
+  ];
+
+  /** The options with the baseline, and the same written as a config file for the CLI. */
+  function staleCase(severity: 'error' | 'warn'): { options: ICruiseOptions; config: string } {
+    const baseline = { staleEntriesSeverity: severity };
+    const config = `.dependency-cruiser.stale-${severity}.json`;
+    writeFileSync(
+      join(repository, config),
+      `${JSON.stringify(
+        {
+          forbidden: FORBIDDEN,
+          options: { doNotFollow: { path: 'node_modules' }, knownViolations: known, baseline },
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    return {
+      options: { ...OPTIONS, knownViolations: known, baseline } as unknown as ICruiseOptions,
+      config,
+    };
+  }
+
+  for (const [severity, gates] of [
+    ['error', 1],
+    ['warn', 0],
+  ] as const) {
+    it(`cruise() equals the CLI with staleEntriesSeverity ${severity}`, async () => {
+      const { options, config } = staleCase(severity);
+      const reported = await cruise(['src'], options);
+      const run = cli(['cruise', '--config', config, '--output-type', 'json', 'src']);
+      expect(comparable(reported.output)).toEqual(comparable(JSON.parse(run.stdout)));
+      const summary = (reported.output as ICruiseResult).summary as unknown as Record<
+        string,
+        unknown
+      >;
+      expect(summary.error).toBe(0);
+      expect(summary.ignore).toBe(1);
+      expect(summary.baselineSize).toBe(2);
+      expect(summary.baselineStale).toBe(1);
+
+      const err = await cruise(['src'], { ...options, outputType: 'err' });
+      const errRun = cli(['cruise', '--config', config, '--output-type', 'err', 'src']);
+      expect(err.output).toBe(errRun.stdout);
+      expect(err.exitCode).toBe(errRun.status);
+      expect(err.exitCode).toBe(gates);
+    });
+
+    it(`format() equals fmt on the saved result with staleEntriesSeverity ${severity}`, async () => {
+      const { config } = staleCase(severity);
+      const run = cli(['cruise', '--config', config, '--output-type', 'json', 'src']);
+      const saved = JSON.parse(run.stdout) as ICruiseResult;
+      // markdown's footer carries the time it was written, so the timestamp is masked.
+      const untimed = (text: unknown): string =>
+        String(text).replace(/\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d+Z/g, '<time>');
+      for (const outputType of ['err', 'err-long', 'markdown'] as const) {
+        const reported = await format(saved, { outputType });
+        const fmt = cli(['fmt', '--output-type', outputType, '--exit-code', '-'], run.stdout);
+        expect(untimed(reported.output), outputType).toBe(untimed(fmt.stdout));
+        expect(reported.exitCode, outputType).toBe(fmt.status);
+      }
+      expect((await format(saved, { outputType: 'err' })).exitCode).toBe(gates);
+    });
+  }
+});
+
 describe('format()', () => {
   it('formats a saved result as fmt does, with the count the reporter gates on', async () => {
     const run = cli([
