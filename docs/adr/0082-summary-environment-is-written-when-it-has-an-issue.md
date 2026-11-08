@@ -1,6 +1,6 @@
 # ADR-0082: `summary.environment` is written when it has an issue
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-07, by the owner)
 - **Date:** 2026-11-07
 - **Derives from:** [ADR-0080](0080-gate-1-moves-to-dependency-cruiser-18-7-0.md) (18.7.0's compiler warnings in `summary.environment`), [ADR-0004](0004-graph-document-is-cruise-result-superset.md) (the module layer is upstream's schema), [ADR-0012](0012-oxc-for-typescript.md) (oxc reads TypeScript, so no compiler is loaded)
 - **Constrains:** `environment` in `crates/rb-cli/src/api.rs`, `evaluate_document` in `crates/rb-cli/src/pipeline.rs`, `environment_issues` in `crates/rb-rules/src/summarize.rs`
