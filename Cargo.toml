@@ -71,7 +71,7 @@ oxc_allocator = "=0.156.0"
 oxc_ast = "=0.156.0"
 oxc_ast_visit = "=0.156.0"
 oxc_diagnostics = "=0.156.0"
-oxc_parser = "=0.156.0"
+oxc_parser = "=0.157.0"
 oxc_semantic = "=0.156.0"
 oxc_span = "=0.156.0"
 # `yarn_pnp` resolves through a Yarn Plug'n'Play manifest for `externalModuleResolutionStrategy:
