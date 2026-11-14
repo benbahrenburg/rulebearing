@@ -1,18 +1,18 @@
 {
-  "run": "42610567010",
+  "run": "43585549656",
   "rows": [
     {
       "repo": "n8n-io/n8n",
       "mode": "",
       "sha": "f89687fd8751970cdf8b9cb76761a1258728ca62",
       "detail": "modules: javascript 1500, python 168, typescript 21244, unknown 4102",
-      "seconds": 11.59,
-      "peakMb": 1982,
-      "run": "42610567010",
+      "seconds": 11.23,
+      "peakMb": 1978,
+      "run": "43585549656",
       "baseline": {
-        "sha": "87ce85d3ceed745c70c4222687791d2f8e6c537a",
-        "seconds": 12.24,
-        "peakMb": 1958
+        "sha": "0ca6dce283ee5a03e3f0acb483cfa81b463fac56",
+        "seconds": 11.97,
+        "peakMb": 1995
       }
     },
     {
@@ -20,13 +20,13 @@
       "mode": "",
       "sha": "423f85091b0a63a21fb571122a933133da1652cd",
       "detail": "modules: javascript 52, typescript 2077, unknown 351",
-      "seconds": 0.52,
-      "peakMb": 176,
-      "run": "42610567010",
+      "seconds": 0.8,
+      "peakMb": 174,
+      "run": "43585549656",
       "baseline": {
-        "sha": "87ce85d3ceed745c70c4222687791d2f8e6c537a",
-        "seconds": 0.51,
-        "peakMb": 175
+        "sha": "0ca6dce283ee5a03e3f0acb483cfa81b463fac56",
+        "seconds": 0.86,
+        "peakMb": 177
       }
     },
     {
@@ -34,12 +34,12 @@
       "mode": "",
       "sha": "b502e688526bca862855361abf0081d84e65c547",
       "detail": "modules: javascript 271, typescript 6825, unknown 390",
-      "seconds": 8.75,
+      "seconds": 7.82,
       "peakMb": 610,
-      "run": "42610567010",
+      "run": "43585549656",
       "baseline": {
-        "sha": "87ce85d3ceed745c70c4222687791d2f8e6c537a",
-        "seconds": 8.73,
+        "sha": "0ca6dce283ee5a03e3f0acb483cfa81b463fac56",
+        "seconds": 7.14,
         "peakMb": 609
       }
     },
@@ -48,13 +48,13 @@
       "mode": "compiled",
       "sha": "b4be275a3b4fd83c304e7377403561a73eb4249e",
       "detail": "modules: dotnet 10131, javascript 268, typescript 207, unknown 69",
-      "seconds": 37.67,
-      "peakMb": 5612,
-      "run": "42610567010",
+      "seconds": 35.85,
+      "peakMb": 5615,
+      "run": "43585549656",
       "baseline": {
-        "sha": "87ce85d3ceed745c70c4222687791d2f8e6c537a",
-        "seconds": 37.13,
-        "peakMb": 5619
+        "sha": "0ca6dce283ee5a03e3f0acb483cfa81b463fac56",
+        "seconds": 40.37,
+        "peakMb": 5615
       }
     },
     {
@@ -62,13 +62,13 @@
       "mode": "source",
       "sha": "b4be275a3b4fd83c304e7377403561a73eb4249e",
       "detail": "modules: dotnet 10131, javascript 268, typescript 207, unknown 69",
-      "seconds": 9.5,
-      "peakMb": 562,
-      "run": "42610567010",
+      "seconds": 7.39,
+      "peakMb": 540,
+      "run": "43585549656",
       "baseline": {
-        "sha": "87ce85d3ceed745c70c4222687791d2f8e6c537a",
-        "seconds": 8.87,
-        "peakMb": 521
+        "sha": "0ca6dce283ee5a03e3f0acb483cfa81b463fac56",
+        "seconds": 7.37,
+        "peakMb": 536
       }
     },
     {
@@ -76,13 +76,13 @@
       "mode": "compiled",
       "sha": "fd75964da853765d63101b4889f23a4161e2758b",
       "detail": "modules: dotnet 2317",
-      "seconds": 4.85,
-      "peakMb": 974,
-      "run": "42610567010",
+      "seconds": 4.26,
+      "peakMb": 975,
+      "run": "43585549656",
       "baseline": {
-        "sha": "87ce85d3ceed745c70c4222687791d2f8e6c537a",
-        "seconds": 4.77,
-        "peakMb": 975
+        "sha": "0ca6dce283ee5a03e3f0acb483cfa81b463fac56",
+        "seconds": 4.34,
+        "peakMb": 974
       }
     },
     {
@@ -90,12 +90,12 @@
       "mode": "",
       "sha": "f50d777440e878554ef6872062341d24c6da0289",
       "detail": "modules: javascript 3, python 22920, typescript 2, unknown 1",
-      "seconds": 10.47,
-      "peakMb": 2253,
-      "run": "42610567010",
+      "seconds": 12.14,
+      "peakMb": 2252,
+      "run": "43585549656",
       "baseline": {
-        "sha": "87ce85d3ceed745c70c4222687791d2f8e6c537a",
-        "seconds": 10.62,
+        "sha": "0ca6dce283ee5a03e3f0acb483cfa81b463fac56",
+        "seconds": 12.36,
         "peakMb": 2252
       }
     }
@@ -103,9 +103,9 @@
   "stopHook": {
     "repo": "dotnet/aspnetcore",
     "sha": "b4be275a3b4fd83c304e7377403561a73eb4249e",
-    "p95": 1.668,
+    "p95": 1.81,
     "edits": 200,
     "cpus": 4,
-    "run": "42610567010"
+    "run": "43585549656"
   }
 }
