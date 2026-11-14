@@ -1,0 +1,71 @@
+{
+  "repo": "sqlfluff/sqlfluff",
+  "sha": "0532c99e27811edb644f0afea13ade46182b72b2",
+  "tool": "import-linter",
+  "importLinterVersion": "2.15",
+  "settings": "pyproject.toml",
+  "config": "imported",
+  "status": "compared",
+  "summary": {
+    "total": 4,
+    "agree": 4,
+    "disagree": 0,
+    "stays": 0,
+    "not-imported": 0,
+    "error": 0
+  },
+  "contracts": [
+    {
+      "id": null,
+      "name": "Forbid dependencies outside core",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": null,
+      "name": "API may not depend on CLI",
+      "type": "forbidden",
+      "importLinter": "kept",
+      "rules": 1,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": null,
+      "name": "Helper methods must be internally independent",
+      "type": "independence",
+      "importLinter": "kept",
+      "rules": 6,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    },
+    {
+      "id": null,
+      "name": "Dependency layers within core",
+      "type": "layers",
+      "importLinter": "kept",
+      "rules": 15,
+      "violations": 0,
+      "rulebearing": "kept",
+      "verdict": "agree"
+    }
+  ],
+  "graph": {
+    "rootPackages": [
+      "sqlfluff"
+    ],
+    "importLinter": 985,
+    "rulebearing": 985,
+    "equal": true,
+    "unexplained": 0,
+    "onlyRulebearing": {},
+    "onlyImportLinter": {}
+  },
+  "agrees": true
+}

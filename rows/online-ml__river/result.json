@@ -1,0 +1,10 @@
+{
+  "repo": "online-ml/river",
+  "sha": "d7085cde5bf90898b338d1ad522c71b9b9aa26f8",
+  "role": "oracle",
+  "tool": "import-linter",
+  "status": "error",
+  "detail": "installing the package or import-linter failed (see install.log)",
+  "incumbent": null,
+  "rulebearing": null
+}

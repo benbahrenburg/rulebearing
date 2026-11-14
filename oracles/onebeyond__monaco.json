@@ -1,0 +1,8 @@
+{
+  "repo": "onebeyond/monaco",
+  "sha": "5700abab4d735e7accdcd0d1fde823845e8c99c3",
+  "tool": "archunitnet",
+  "status": "error",
+  "detail": "rulebearing import archunit failed: rulebearing import: the configuration written does not load, which is a bug in the importer: /home/runner/work/_temp/rulebearing-testbeds/onebeyond__monaco/<stdin> does not parse: too many consecutive comments before resolving collection entry at line 49, column 5",
+  "agrees": false
+}

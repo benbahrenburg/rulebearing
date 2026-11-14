@@ -1,0 +1,36 @@
+{
+  "repo": "nager/Nager.Date",
+  "sha": "e2734bcfad2397957a5fe18a4f22fb145e87c1e0",
+  "files": 240,
+  "sourceEdges": 1048,
+  "compiledEdges": 1260,
+  "agreeing": 1047,
+  "precision": 0.999,
+  "recall": 0.831,
+  "target": 0.9,
+  "onlySource": [
+    "src/Nager.Date/HolidayProviders/AbstractHolidayProvider.cs -> src/Nager.Date/HolidaySpecificationProcessor.cs"
+  ],
+  "onlyCompiled": [
+    "src/Nager.Date/Extensions/DateTimeExtension.cs -> src/Nager.Date/WeekendProviders/IWeekendProvider.cs",
+    "src/Nager.Date/HolidayProviders/AlandHolidayProvider.cs -> src/Nager.Date/HolidayProviders/IPublicHolidayHolidayProvider.cs",
+    "src/Nager.Date/HolidayProviders/AlbaniaHolidayProvider.cs -> src/Nager.Date/HolidayProviders/IPublicHolidayHolidayProvider.cs",
+    "src/Nager.Date/HolidayProviders/AlgeriaHolidayProvider.cs -> src/Nager.Date/HolidayProviders/IPublicHolidayHolidayProvider.cs",
+    "src/Nager.Date/HolidayProviders/AndorraHolidayProvider.cs -> src/Nager.Date/HolidayProviders/IPublicHolidayHolidayProvider.cs",
+    "src/Nager.Date/HolidayProviders/AngolaHolidayProvider.cs -> src/Nager.Date/HolidayProviders/IPublicHolidayHolidayProvider.cs",
+    "src/Nager.Date/HolidayProviders/AnguillaHolidayProvider.cs -> src/Nager.Date/HolidayProviders/IPublicHolidayHolidayProvider.cs",
+    "src/Nager.Date/HolidayProviders/AntarcticaHolidayProvider.cs -> src/Nager.Date/HolidayProviders/IPublicHolidayHolidayProvider.cs",
+    "src/Nager.Date/HolidayProviders/AntiguaAndBarbudaHolidayProvider.cs -> src/Nager.Date/HolidayProviders/IPublicHolidayHolidayProvider.cs",
+    "src/Nager.Date/HolidayProviders/ArgentinaHolidayProvider.cs -> src/Nager.Date/HolidayProviders/IPublicHolidayHolidayProvider.cs",
+    "src/Nager.Date/HolidayProviders/ArmeniaHolidayProvider.cs -> src/Nager.Date/HolidayProviders/IPublicHolidayHolidayProvider.cs",
+    "src/Nager.Date/HolidayProviders/ArubaHolidayProvider.cs -> src/Nager.Date/HolidayProviders/IPublicHolidayHolidayProvider.cs",
+    "src/Nager.Date/HolidayProviders/AustraliaHolidayProvider.cs -> src/Nager.Date/HolidayProviders/IPublicHolidayHolidayProvider.cs",
+    "src/Nager.Date/HolidayProviders/AustriaHolidayProvider.cs -> src/Nager.Date/HolidayProviders/IPublicHolidayHolidayProvider.cs",
+    "src/Nager.Date/HolidayProviders/BahamasHolidayProvider.cs -> src/Nager.Date/HolidayProviders/IPublicHolidayHolidayProvider.cs",
+    "src/Nager.Date/HolidayProviders/BahrainHolidayProvider.cs -> src/Nager.Date/HolidayProviders/IPublicHolidayHolidayProvider.cs",
+    "src/Nager.Date/HolidayProviders/BangladeshHolidayProvider.cs -> src/Nager.Date/HolidayProviders/IPublicHolidayHolidayProvider.cs",
+    "src/Nager.Date/HolidayProviders/BarbadosHolidayProvider.cs -> src/Nager.Date/HolidayProviders/IPublicHolidayHolidayProvider.cs",
+    "src/Nager.Date/HolidayProviders/BelarusHolidayProvider.cs -> src/Nager.Date/HolidayProviders/IPublicHolidayHolidayProvider.cs",
+    "src/Nager.Date/HolidayProviders/BelgiumHolidayProvider.cs -> src/Nager.Date/HolidayProviders/IPublicHolidayHolidayProvider.cs"
+  ]
+}
