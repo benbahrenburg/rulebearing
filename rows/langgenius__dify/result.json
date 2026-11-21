@@ -1,0 +1,10 @@
+{
+  "repo": "langgenius/dify",
+  "sha": "3a017e8cccb316f23f601af65d2e8ce92e68f788",
+  "role": "oracle",
+  "tool": "import-linter",
+  "status": "error",
+  "detail": "installing the package or import-linter failed (see install.log)",
+  "incumbent": null,
+  "rulebearing": null
+}

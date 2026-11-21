@@ -1,0 +1,111 @@
+{
+  "run": "44897703747",
+  "rows": [
+    {
+      "repo": "n8n-io/n8n",
+      "mode": "",
+      "sha": "f89687fd8751970cdf8b9cb76761a1258728ca62",
+      "detail": "modules: javascript 1500, python 168, typescript 21244, unknown 4102",
+      "seconds": 12.58,
+      "peakMb": 2037,
+      "run": "44897703747",
+      "baseline": {
+        "sha": "0ca6dce283ee5a03e3f0acb483cfa81b463fac56",
+        "seconds": 12.43,
+        "peakMb": 2015
+      }
+    },
+    {
+      "repo": "grafana/grafana",
+      "mode": "",
+      "sha": "423f85091b0a63a21fb571122a933133da1652cd",
+      "detail": "modules: javascript 52, typescript 2077, unknown 351",
+      "seconds": 0.7,
+      "peakMb": 174,
+      "run": "44897703747",
+      "baseline": {
+        "sha": "0ca6dce283ee5a03e3f0acb483cfa81b463fac56",
+        "seconds": 0.69,
+        "peakMb": 174
+      }
+    },
+    {
+      "repo": "elastic/kibana",
+      "mode": "",
+      "sha": "b502e688526bca862855361abf0081d84e65c547",
+      "detail": "modules: javascript 271, typescript 6825, unknown 390",
+      "seconds": 6.83,
+      "peakMb": 612,
+      "run": "44897703747",
+      "baseline": {
+        "sha": "0ca6dce283ee5a03e3f0acb483cfa81b463fac56",
+        "seconds": 6.96,
+        "peakMb": 611
+      }
+    },
+    {
+      "repo": "dotnet/aspnetcore",
+      "mode": "compiled",
+      "sha": "b4be275a3b4fd83c304e7377403561a73eb4249e",
+      "detail": "modules: dotnet 10131, javascript 268, typescript 207, unknown 69",
+      "seconds": 33.03,
+      "peakMb": 5608,
+      "run": "44897703747",
+      "baseline": {
+        "sha": "0ca6dce283ee5a03e3f0acb483cfa81b463fac56",
+        "seconds": 32.06,
+        "peakMb": 5612
+      }
+    },
+    {
+      "repo": "dotnet/aspnetcore",
+      "mode": "source",
+      "sha": "b4be275a3b4fd83c304e7377403561a73eb4249e",
+      "detail": "modules: dotnet 10131, javascript 268, typescript 207, unknown 69",
+      "seconds": 13.39,
+      "peakMb": 571,
+      "run": "44897703747",
+      "baseline": {
+        "sha": "0ca6dce283ee5a03e3f0acb483cfa81b463fac56",
+        "seconds": 13.72,
+        "peakMb": 548
+      }
+    },
+    {
+      "repo": "jellyfin/jellyfin",
+      "mode": "compiled",
+      "sha": "fd75964da853765d63101b4889f23a4161e2758b",
+      "detail": "modules: dotnet 2317",
+      "seconds": 4.34,
+      "peakMb": 972,
+      "run": "44897703747",
+      "baseline": {
+        "sha": "0ca6dce283ee5a03e3f0acb483cfa81b463fac56",
+        "seconds": 4.14,
+        "peakMb": 971
+      }
+    },
+    {
+      "repo": "home-assistant/core",
+      "mode": "",
+      "sha": "f50d777440e878554ef6872062341d24c6da0289",
+      "detail": "modules: javascript 3, python 22920, typescript 2, unknown 1",
+      "seconds": 10.31,
+      "peakMb": 2212,
+      "run": "44897703747",
+      "baseline": {
+        "sha": "0ca6dce283ee5a03e3f0acb483cfa81b463fac56",
+        "seconds": 10.27,
+        "peakMb": 2213
+      }
+    }
+  ],
+  "stopHook": {
+    "repo": "dotnet/aspnetcore",
+    "sha": "b4be275a3b4fd83c304e7377403561a73eb4249e",
+    "p95": 1.371,
+    "edits": 200,
+    "cpus": 4,
+    "run": "44897703747"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "repository": "dotnet/aspnetcore",
+  "sha": "b4be275a3b4fd83c304e7377403561a73eb4249e",
+  "tool": "rulebearing 0.1.3",
+  "command": "rulebearing cruise --from-hook --mode source --cache --affected HEAD",
+  "extension": ".cs",
+  "edits": 200,
+  "seed": 42,
+  "seconds": {
+    "p50": 1.332,
+    "p95": 1.371,
+    "p99": 1.382,
+    "mean": 1.331,
+    "min": 0.804,
+    "max": 1.519
+  },
+  "thresholdSeconds": 2.0,
+  "runner": {
+    "os": "Linux 7.0.0-1016-aws",
+    "machine": "x86_64",
+    "cpus": 4,
+    "cpu": "Intel(R) Xeon(R) 6975P-C",
+    "memoryBytes": 16463409152
+  }
+}
