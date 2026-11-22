@@ -17,7 +17,11 @@ deny = [
 ]
 
 [advisories]
-ignore = []
+# One advisory is ignored, and only by id. docs/adr/0083-chrono-stays-while-it-is-unmaintained-and-not-vulnerable.md
+# says why and when it goes.
+ignore = [
+    { id = "RUSTSEC-2026-0543", reason = "chrono is unmaintained, not vulnerable; ADR-0083 keeps it for civil dates and names what removes this entry" },
+]
 
 # Supply chain: crates may come only from the public registry. A git dependency, or a private
 # registry, has to be argued for in an ADR first (docs/adr/0025-ci-and-supply-chain-hardening.md).
