@@ -338,8 +338,10 @@ jobs:
         env:
           RULEBEARING_BIN: ${{ github.workspace }}/target/release/rulebearing
 
-  # Mutation testing runs in eight shards so the rule engine's mutants fit the time limit; the
-  # `mutants` job below is the required check and passes only when every shard did.
+  # Mutation testing runs in sixteen shards so the rule engine's mutants fit the time limit: the
+  # whole scope on main is about 2,300 mutants, and at eight shards the slowest ones ran past the
+  # 45 minutes (2026-11-22). The `mutants` job below is the required check and passes only when
+  # every shard did.
   mutants-shard:
     name: mutants shard ${{ matrix.shard }}
     runs-on: ubuntu-latest
@@ -347,7 +349,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -365,9 +367,9 @@ jobs:
       - if: github.event_name != 'push'
         env:
           BASE_REF: ${{ github.base_ref || 'main' }}
-        run: scripts/mutants-diff.sh "origin/$BASE_REF" --shard ${{ matrix.shard }}/8 --jobs 2
+        run: scripts/mutants-diff.sh "origin/$BASE_REF" --shard ${{ matrix.shard }}/16 --jobs 2
       - if: github.event_name == 'push'
-        run: cargo mutants --no-shuffle --package rb-model --package rb-rules --package xtask --shard ${{ matrix.shard }}/8 --jobs 2
+        run: cargo mutants --no-shuffle --package rb-model --package rb-rules --package xtask --shard ${{ matrix.shard }}/16 --jobs 2
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

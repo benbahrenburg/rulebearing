@@ -3,7 +3,7 @@
 # names. The pull-request job and a step's pre-merge check run this; a push to main runs the whole
 # scope (docs/adr/0059-gates-run-by-tier-and-mutants-by-diff.md).
 #
-# Usage: scripts/mutants-diff.sh <base-ref> [cargo mutants options, e.g. --shard 0/8 --jobs 2]
+# Usage: scripts/mutants-diff.sh <base-ref> [cargo mutants options, e.g. --shard 0/16 --jobs 2]
 #
 # The diff is the working tree against the merge base with <base-ref>, so uncommitted edits count.
 # A file git does not know yet is not in the diff: `git add -N <file>` makes it visible.
