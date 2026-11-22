@@ -1,18 +1,18 @@
 {
-  "run": "45017554097",
+  "run": "45045024668",
   "rows": [
     {
       "repo": "n8n-io/n8n",
       "mode": "",
       "sha": "f89687fd8751970cdf8b9cb76761a1258728ca62",
       "detail": "modules: javascript 1500, python 168, typescript 21244, unknown 4102",
-      "seconds": 12.06,
-      "peakMb": 2034,
-      "run": "45017554097",
+      "seconds": 12.04,
+      "peakMb": 2040,
+      "run": "45045024668",
       "baseline": {
         "sha": "0ca6dce283ee5a03e3f0acb483cfa81b463fac56",
-        "seconds": 12.24,
-        "peakMb": 1987
+        "seconds": 12.05,
+        "peakMb": 1980
       }
     },
     {
@@ -20,13 +20,13 @@
       "mode": "",
       "sha": "423f85091b0a63a21fb571122a933133da1652cd",
       "detail": "modules: javascript 52, typescript 2077, unknown 351",
-      "seconds": 0.8,
-      "peakMb": 173,
-      "run": "45017554097",
+      "seconds": 0.61,
+      "peakMb": 174,
+      "run": "45045024668",
       "baseline": {
         "sha": "0ca6dce283ee5a03e3f0acb483cfa81b463fac56",
-        "seconds": 0.83,
-        "peakMb": 176
+        "seconds": 0.58,
+        "peakMb": 173
       }
     },
     {
@@ -34,12 +34,12 @@
       "mode": "",
       "sha": "b502e688526bca862855361abf0081d84e65c547",
       "detail": "modules: javascript 271, typescript 6825, unknown 390",
-      "seconds": 7.2,
-      "peakMb": 612,
-      "run": "45017554097",
+      "seconds": 6.54,
+      "peakMb": 610,
+      "run": "45045024668",
       "baseline": {
         "sha": "0ca6dce283ee5a03e3f0acb483cfa81b463fac56",
-        "seconds": 7.17,
+        "seconds": 6.46,
         "peakMb": 611
       }
     },
@@ -47,28 +47,28 @@
       "repo": "dotnet/aspnetcore",
       "mode": "compiled",
       "sha": "b4be275a3b4fd83c304e7377403561a73eb4249e",
-      "detail": "modules: dotnet 10131, javascript 268, typescript 207, unknown 69",
-      "seconds": 27.12,
-      "peakMb": 5611,
-      "run": "45017554097",
+      "detail": "modules: dotnet 10131, javascript 264, typescript 207, unknown 69",
+      "seconds": 32.01,
+      "peakMb": 5609,
+      "run": "45045024668",
       "baseline": {
         "sha": "0ca6dce283ee5a03e3f0acb483cfa81b463fac56",
-        "seconds": 27.37,
-        "peakMb": 5612
+        "seconds": 31.8,
+        "peakMb": 5609
       }
     },
     {
       "repo": "dotnet/aspnetcore",
       "mode": "source",
       "sha": "b4be275a3b4fd83c304e7377403561a73eb4249e",
-      "detail": "modules: dotnet 10131, javascript 268, typescript 207, unknown 69",
-      "seconds": 9.05,
-      "peakMb": 543,
-      "run": "45017554097",
+      "detail": "modules: dotnet 10131, javascript 264, typescript 207, unknown 69",
+      "seconds": 9.98,
+      "peakMb": 539,
+      "run": "45045024668",
       "baseline": {
         "sha": "0ca6dce283ee5a03e3f0acb483cfa81b463fac56",
-        "seconds": 8.88,
-        "peakMb": 539
+        "seconds": 10.06,
+        "peakMb": 576
       }
     },
     {
@@ -76,13 +76,13 @@
       "mode": "compiled",
       "sha": "fd75964da853765d63101b4889f23a4161e2758b",
       "detail": "modules: dotnet 2317",
-      "seconds": 5.07,
-      "peakMb": 973,
-      "run": "45017554097",
+      "seconds": 4.5,
+      "peakMb": 971,
+      "run": "45045024668",
       "baseline": {
         "sha": "0ca6dce283ee5a03e3f0acb483cfa81b463fac56",
-        "seconds": 4.94,
-        "peakMb": 971
+        "seconds": 4.41,
+        "peakMb": 972
       }
     },
     {
@@ -90,22 +90,22 @@
       "mode": "",
       "sha": "f50d777440e878554ef6872062341d24c6da0289",
       "detail": "modules: javascript 3, python 22920, typescript 2, unknown 1",
-      "seconds": 10.2,
-      "peakMb": 2213,
-      "run": "45017554097",
+      "seconds": 9.75,
+      "peakMb": 2212,
+      "run": "45045024668",
       "baseline": {
         "sha": "0ca6dce283ee5a03e3f0acb483cfa81b463fac56",
-        "seconds": 10.11,
-        "peakMb": 2220
+        "seconds": 9.55,
+        "peakMb": 2212
       }
     }
   ],
   "stopHook": {
     "repo": "dotnet/aspnetcore",
     "sha": "b4be275a3b4fd83c304e7377403561a73eb4249e",
-    "p95": 1.709,
+    "p95": 1.367,
     "edits": 200,
     "cpus": 4,
-    "run": "45017554097"
+    "run": "45045024668"
   }
 }
