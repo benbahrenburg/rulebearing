@@ -1104,7 +1104,13 @@ mod tests {
         )?;
         let config = repo.load("rulebearing.yaml")?;
         let exclude = serde_json::to_string(&config.languages.typescript.exclude)?;
-        for part in ["(obj|bin)", "g\\\\.cs", "Designer", "GlobalUsings"] {
+        for part in [
+            "(^|/)obj/",
+            "(^|/)bin/.+",
+            "g\\\\.cs",
+            "Designer",
+            "GlobalUsings",
+        ] {
             assert!(exclude.contains(part), "{part} in {exclude}");
         }
         let orphans = config

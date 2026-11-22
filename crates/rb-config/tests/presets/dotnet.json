@@ -18,7 +18,8 @@
   "options": {
     "exclude": {
       "path": [
-        "(^|/)(obj|bin)/.+\\.cs$",
+        "(^|/)obj/",
+        "(^|/)bin/.+\\.cs$",
         "\\.g\\.cs$",
         "\\.Designer\\.cs$",
         "(^|/)GlobalUsings\\.g\\.cs$"
