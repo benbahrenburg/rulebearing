@@ -1,7 +1,8 @@
 # rulebearing:dotnet. Original to Rulebearing. The .NET defaults of
 # docs/plans/implemented/0002-wave-2-dotnet-python-element-rules.md, Step 3, and nothing else: build
-# output and generated sources are not modules (the obj/ and bin/ exclusion is scoped to C#
-# sources, the only .NET modules, so a TypeScript bin/ folder beside them is kept), and the files
+# output and generated sources are not modules (obj/ is MSBuild's intermediate folder, so all of
+# it is excluded, the `.js` modules the SDK's hot-reload targets write there included; the bin/
+# exclusion is scoped to C# sources, so a TypeScript bin/ folder beside them is kept), and the files
 # the runtime or the tooling enters by convention rather than by reference are not orphans.
 # Composed by rulebearing:recommended; a .NET-only repository writes
 # `extends: [rulebearing:dotnet, rulebearing:recommended]`, and these settings win. Source:
@@ -22,7 +23,8 @@ rules:
 options:
   exclude:
     path:
-      - "(^|/)(obj|bin)/.+\\.cs$"
+      - "(^|/)obj/"
+      - "(^|/)bin/.+\\.cs$"
       - "\\.g\\.cs$"
       - "\\.Designer\\.cs$"
       - "(^|/)GlobalUsings\\.g\\.cs$"

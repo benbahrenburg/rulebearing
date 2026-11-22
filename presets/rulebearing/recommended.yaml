@@ -47,7 +47,8 @@ options:
   exclude:
     path:
       - "(^|/)(dist|build|coverage|\\.next|out)/"
-      - "(^|/)(obj|bin)/.+\\.cs$"
+      - "(^|/)obj/"
+      - "(^|/)bin/.+\\.cs$"
       - "\\.g\\.cs$"
       - "\\.Designer\\.cs$"
       - "(^|/)GlobalUsings\\.g\\.cs$"
