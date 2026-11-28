@@ -1,0 +1,23 @@
+{
+  "repo": "sverweij/dependency-cruiser",
+  "sha": "7c22858071cc4491321c735ff11894d90648ee6e",
+  "role": "oracle",
+  "tool": "dependency-cruiser",
+  "status": "ok",
+  "detail": "dependency-cruiser@18.4.0",
+  "incumbent": {
+    "wall_seconds": 1.09,
+    "max_rss_kb": 172520,
+    "exit_code": 0
+  },
+  "rulebearing": {
+    "wall_seconds": 0.05,
+    "max_rss_kb": 20136,
+    "exit_code": 0
+  },
+  "regression": {
+    "current": 0.05,
+    "baseline": 0.05,
+    "baseline_sha": "4c627222f9c42e38d9c0f56da980f06ce692ece1"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "repo": "aws/aws-toolkit-vscode",
+  "sha": "36ad9035f4b921e12a9135f07a5f5134b71f704b",
+  "role": "oracle",
+  "tool": "dependency-cruiser",
+  "status": "ok",
+  "detail": "dependency-cruiser@18.2.0",
+  "incumbent": {
+    "wall_seconds": 0.25,
+    "max_rss_kb": 95640,
+    "exit_code": 0
+  },
+  "rulebearing": {
+    "wall_seconds": 0.42,
+    "max_rss_kb": 186724,
+    "exit_code": 0
+  },
+  "regression": {
+    "current": 0.42,
+    "baseline": 0.4,
+    "baseline_sha": "4c627222f9c42e38d9c0f56da980f06ce692ece1"
+  }
+}

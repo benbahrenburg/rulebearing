@@ -1,0 +1,22 @@
+{
+  "repo": "evolutionary-architecture/evolutionary-architecture-by-example",
+  "sha": "441a7cd94d3acfbac7d210a95ea8e78429fc9f47",
+  "as-written": {
+    "gate": 0,
+    "analyzer": 0,
+    "agreeing": 0,
+    "onlyGate": [],
+    "onlyAnalyzer": [],
+    "differences": 0
+  },
+  "negated": {
+    "gate": 214,
+    "analyzer": 214,
+    "agreeing": 214,
+    "onlyGate": [],
+    "onlyAnalyzer": [],
+    "differences": 0
+  },
+  "leftToCruise": [],
+  "agrees": true
+}

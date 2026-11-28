@@ -1,0 +1,23 @@
+{
+  "repo": "microsoft/FluidFramework",
+  "sha": "235654550d165d0da3a40c1b6fb1c6ec2bea676b",
+  "role": "oracle",
+  "tool": "dependency-cruiser",
+  "status": "ok",
+  "detail": "dependency-cruiser@17.3.2",
+  "incumbent": {
+    "wall_seconds": 0.36,
+    "max_rss_kb": 102044,
+    "exit_code": 0
+  },
+  "rulebearing": {
+    "wall_seconds": 0.19,
+    "max_rss_kb": 65328,
+    "exit_code": 0
+  },
+  "regression": {
+    "current": 0.19,
+    "baseline": 0.18,
+    "baseline_sha": "4c627222f9c42e38d9c0f56da980f06ce692ece1"
+  }
+}
